@@ -1,0 +1,2420 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>AURA DATHUM • Gestão Inteligente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root{
+      --blue:#2157d5; --blue-2:#1f6feb; --blue-3:#2a8bf7;
+      --ink:#0b1225; --bg:#0c142a; --text:#e9eef9; --muted:#96a3bb; --line:#1f2d4b;
+      --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+    }
+    .theme-light{
+      --bg:#f6f9ff; --ink:#0b1225; --text:#0b1225; --muted:#4b5874; --line:#d7e1f3;
+    }
+    body{
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 85% -10%, rgba(42,139,247,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg));
+      font-family: ui-sans-serif, system-ui, Inter, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    .metal{ background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.00));
+      border:1px solid var(--line); border-radius:1rem;
+      box-shadow: 0 10px 28px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .solid{ background:var(--bg); border:1px solid var(--line); border-radius:1rem; box-shadow: 0 10px 28px rgba(0,0,0,.16) }
+    .btn{ display:inline-flex; align-items:center; gap:.55rem; background: linear-gradient(180deg, var(--blue), var(--blue-2)); color:#fff; padding:.6rem 1rem; border-radius:.8rem; font-weight:700; transition:transform .08s, filter .15s }
+    .btn:hover{ filter:brightness(1.06) } .btn:active{ transform:translateY(1px) }
+    .btn-ghost{ background:transparent; color:var(--blue-3); border:1px solid var(--line); padding:.55rem 1rem; border-radius:.8rem; font-weight:700 }
+    .icon-btn{ width:42px; height:42px; display:grid; place-items:center; border-radius:.8rem; border:1px solid var(--line); background:rgba(255,255,255,.03); color:var(--blue-3) }
+    .chip{ border:1px solid var(--line); padding:.22rem .6rem; border-radius:999px; font-size:.75rem }
+    .field{ width:100%; border:1px solid var(--line); border-radius:.75rem; background:rgba(255,255,255,.02); color:var(--text); padding:.6rem .75rem; outline:none }
+    .field:focus{ box-shadow:0 0 0 3px rgba(31,111,235,.22); border-color:rgba(31,111,235,.45) }
+    .field:disabled{ opacity: .7; cursor: not-allowed; }
+    .title-grad{ background:linear-gradient(90deg,#06b6d4 0%, #8b5cf6 50%, #ec4899 100%); -webkit-background-clip:text; background-clip:text; color:transparent }
+    .topbar{ background: linear-gradient(180deg, rgba(12,20,40,.90), rgba(12,20,40,.90)); border-bottom:1px solid var(--line); backdrop-filter:saturate(140%) blur(8px); }
+    .theme-light .topbar{ background: linear-gradient(180deg, rgba(246,249,255,.92), rgba(246,249,255,.92)); }
+    .topbar .group{ border:1px solid var(--line); background:rgba(255,255,255,.04); border-radius:.9rem }
+    input[type="checkbox"]{ accent-color: var(--blue-3); }
+    .theme-light input[type="checkbox"]{ accent-color: var(--blue-2); }
+    .chart-wrap{ height: 280px } /* Ajustado para melhor visualização */
+    .toast{ position:fixed; right:1rem; bottom:1rem; background:rgba(12,20,40,.95); color:#dbe9ff; padding:.75rem 1rem; border-radius:.9rem; border:1px solid var(--line); display:none; z-index:200; box-shadow:0 12px 30px rgba(0,0,0,.35) }
+    /* Sidebar */
+    .sidebar{ position:fixed; top:64px; left:0; height:calc(100dvh - 64px); width:280px; transform:translateX(-300px); transition: transform .24s ease; z-index:70; background:var(--bg); border-right:1px solid var(--line); }
+    .sidebar.open{ transform:translateX(0) }
+    .sidebar-dim{ position:fixed; inset:64px 0 0 0; background:rgba(0,0,0,.35); display:none; z-index:60 }
+    .sidebar-dim.show{ display:block }
+    .sidebar nav{ display:flex; flex-direction:column; gap:.4rem }
+    .sidebar .nav-btn{ display:flex; align-items:center; gap:.65rem; padding:.58rem .7rem; border-radius:.75rem; color:var(--muted); border:1px solid transparent; transition:background .15s ease, color .15s ease, border-color .15s ease }
+    .sidebar .nav-btn:hover{ background:rgba(255,255,255,.04); color:var(--text); border-color:var(--line) }
+    .sidebar .nav-btn.active{ background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); color:var(--text); border-color:var(--line) }
+    .sidebar .nav-btn span:first-child{ width:28px; height:28px; display:grid; place-items:center; border-radius:.55rem; background:rgba(31,111,235,.12); color:#8ec7ff; font-size:15px }
+    .sidebar .nav-btn span:last-child{ font-weight:600; letter-spacing:.2px }
+    /* Menus */
+    .badge-count{ position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 6px; border-radius:999px; background:#ef4444; color:#fff; font-size:11px; display:grid; place-items:center; border:2px solid var(--bg) }
+    .badge-count.hidden{ display:none }
+    .notif-panel{ position:absolute; right:0; top:calc(100% + 8px); width:320px; max-height:360px; overflow:auto; background:var(--bg); border:1px solid var(--line); border-radius:.8rem; box-shadow:0 14px 30px rgba(0,0,0,.35); display:none; z-index:120 }
+    .notif-panel.show{ display:block }
+    .menu-panel{ position:absolute; right:0; top:calc(100% + 8px); width:240px; background:var(--bg); border:1px solid var(--line); border-radius:.8rem; box-shadow:0 14px 30px rgba(0,0,0,.35); display:none; z-index:120; padding:.5rem }
+    .menu-panel.show{ display:block }
+    /* Palette de busca */
+    .palette{ position:fixed; inset:0; display:none; align-items:flex-start; justify-content:center; padding-top:8vh; z-index:160; background:rgba(0,0,0,.35); backdrop-filter:blur(4px); }
+    .palette.show{ display:flex }
+    .palette .card{ width:min(760px,95vw); background:var(--bg); border:1px solid var(--line); border-radius:1rem; box-shadow:0 20px 50px rgba(0,0,0,.45); overflow:hidden }
+    .palette .row{ display:flex; align-items:center; gap:.6rem; padding:.6rem .9rem; border-top:1px solid rgba(255,255,255,.04); cursor:pointer; }
+    .palette .row:hover{ background:rgba(255,255,255,.05) }
+    .palette .row.active{ background:rgba(31,111,235,.15) }
+    .palette .k{ font-size:12px; opacity:.8; border:1px solid var(--line); padding:.05rem .35rem; border-radius:.4rem }
+    /* Câmeras refinadas */
+    .cam-tile{ position:relative; border:1px solid var(--line); border-radius:1rem; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); transition:transform .08s ease, box-shadow .15s ease }
+    .cam-tile:hover{ transform:translateY(-1px); box-shadow:0 12px 24px rgba(0,0,0,.18) }
+    .cam-toolbar{ position:absolute; top:.6rem; right:.6rem; display:flex; gap:.35rem; z-index:5 }
+    .cam-toolbar .mini{ display:grid; place-items:center; width:34px; height:34px; border-radius:.6rem; backdrop-filter: blur(6px); background:rgba(12,20,40,.58); border:1px solid var(--line); color:#cfe2ff; font-size:14px }
+    .cam-head{ position:absolute; left:.6rem; top:.6rem; display:flex; gap:.35rem; align-items:center; z-index:5 }
+    .cam-badge{ background:rgba(12,20,40,.55); border:1px solid var(--line); color:#cfe2ff; padding:.22rem .5rem; border-radius:.6rem; font-size:.75rem; backdrop-filter: blur(6px) }
+    .cam-foot{ position:absolute; left:0; right:0; bottom:0; padding:.45rem .6rem; font-size:.75rem; color:#cfe2ff; background:linear-gradient(180deg, rgba(12,20,40,0), rgba(12,20,40,.55)); }
+    .select-ring{ outline: 2px solid #22c55e; outline-offset: 2px }
+    /* Acessibilidade */
+    .focus-mode .sidebar{ display:none }
+    .high-contrast *{ text-shadow:none !important; }
+    .brand{ display:flex; flex-direction:column; }
+    .brand-sub{ letter-spacing:.12em; }
+    /* Sirene visual */
+    .alert-banner{ position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:170; background:linear-gradient(90deg, rgba(239,68,68,.95), rgba(245,158,11,.95)); color:#fff; padding:.5rem .9rem; border-radius:.8rem; border:1px solid rgba(255,255,255,.25); box-shadow:0 10px 24px rgba(0,0,0,.35); display:flex; align-items:center; gap:.5rem }
+    .alert-banner.hidden{ display:none }
+    /* Menu de Ocorrências */
+    .occurrence-menu {
+        position: absolute;
+        z-index: 180;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 0.8rem;
+        box-shadow: 0 10px 24px rgba(0,0,0,.35);
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        width: 180px;
+    }
+    .occurrence-menu button {
+        background: transparent;
+        border: none;
+        color: var(--text);
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        width: 100%;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .occurrence-menu button:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    .spinner {
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: var(--blue-3);
+        animation: spin 1s ease infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .map-highlight {
+      outline: 2px solid var(--blue-3);
+      outline-offset: 2px;
+      box-shadow: 0 0 15px var(--blue-3);
+    }
+    /* MELHORIA: Componente de estado vazio */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem;
+        text-align: center;
+        color: var(--muted);
+        border: 2px dashed var(--line);
+        border-radius: 1rem;
+        margin: 1rem 0;
+    }
+    .empty-state svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <!-- Topbar -->
+  <header class="topbar sticky top-0 z-50">
+    <div id="alertBanner" class="alert-banner hidden" role="alert" aria-live="assertive">🚨 Ocorrência crítica</div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <button id="btnSidebar" class="icon-btn" title="Menu">☰</button>
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 grid place-items-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                  <linearGradient id="logo-gradient" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#06b6d4"/>
+                      <stop offset="0.5" stop-color="#8b5cf6"/>
+                      <stop offset="1" stop-color="#ec4899"/>
+                  </linearGradient>
+              </defs>
+              <path d="M12 2L4 6V18L12 22L20 18V6L12 2Z" stroke="url(#logo-gradient)" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M12 12L20 8" stroke="url(#logo-gradient)" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 12L4 8" stroke="url(#logo-gradient)" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 12V22" stroke="url(#logo-gradient)" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="2" fill="url(#logo-gradient)" fill-opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="brand">
+            <h1 class="text-xl font-black tracking-wide title-grad" style="text-shadow:0 1px 0 rgba(255,255,255,.08)">AURA DATHUM</h1>
+            <p class="brand-sub text-[11px] -mt-1 font-semibold title-grad uppercase">Gestão Inteligente</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Busca compacta (abre palette) -->
+      <button id="openSearch" class="group hidden md:flex items-center gap-2 px-3 py-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="text-sm" style="color:var(--muted)">Buscar em tudo…</span>
+        <span class="k ml-2">/</span>
+      </button>
+
+      <div class="flex items-center gap-2">
+        <button id="btnGerar" class="btn shadow-md hover:shadow-lg" title="Gerar Ocorrência" data-locked="1">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Nova
+        </button>
+
+        <div class="relative">
+          <button id="btnNotifs" class="icon-btn hover:scale-[1.03]" title="Notificações">🔔</button>
+          <span id="notifCount" class="badge-count hidden">0</span>
+          <div id="notifPanel" class="notif-panel">
+            <div class="p-3 border-b border-[var(--line)] flex items-center justify-between">
+              <div class="font-semibold">Notificações</div>
+              <button id="btnClearNotifs" class="btn-ghost text-xs">Limpar</button>
+            </div>
+            <div id="notifList" class="p-3 flex flex-col gap-2 text-sm"></div>
+          </div>
+        </div>
+
+        <!-- Configurações (Foco, Contraste, Ajuda) -->
+        <div class="relative">
+          <button id="btnSettings" class="icon-btn" title="Configurações">⚙️</button>
+          <div id="settingsPanel" class="menu-panel">
+            <div class="font-semibold px-1 mb-1">Configurações</div>
+            <label class="flex items-center justify-between px-1 py-1"><span>Modo Foco</span><input id="setFocus" type="checkbox"></label>
+            <label class="flex items-center justify-between px-1 py-1"><span>Alto Contraste</span><input id="setContrast" type="checkbox"></label>
+            <button id="openHelp" class="btn-ghost text-xs w-full mt-1">Atalhos & Ajuda</button>
+          </div>
+        </div>
+
+        <button id="btnTheme" class="icon-btn" title="Tema">🌗</button>
+
+        <div id="opBlock" class="op-chip hidden relative cursor-pointer" title="Perfil">
+          <div class="op-avatar icon-btn !w-8 !h-8 !rounded-full" id="opAvatar">OP</div>
+          <div class="hidden sm:block">
+            <div id="opName" class="text-sm font-semibold" style="color:var(--text)">Operador</div>
+            <div id="opMat" class="text-[11px]" style="color:var(--text); opacity:.8">—</div>
+          </div>
+          <div id="opMenu" class="menu-panel">
+            <button id="btnLogout" class="btn-ghost text-xs w-full">Sair</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar p-3">
+    <nav class="flex flex-col gap-2">
+      <button class="nav-btn active" data-tab="login"><span>👤</span><span>Usuário</span></button>
+      <button class="nav-btn locked" data-tab="dashboard"><span>📊</span><span>Painel Geral</span></button>
+      <button class="nav-btn locked" data-tab="acomp"><span>🚨</span><span>Acompanhamento</span></button>
+      <button class="nav-btn locked" data-tab="relatorios"><span>🗂️</span><span>Relatórios</span></button>
+      <button class="nav-btn locked" data-tab="desempenho"><span>📈</span><span>Desempenho</span></button>
+      <button class="nav-btn locked" data-tab="controle"><span>🧭</span><span>Controle</span></button>
+      <button class="nav-btn locked" data-tab="cameras"><span>🎥</span><span>Câmeras</span></button>
+      <button class="nav-btn locked" data-tab="mapa"><span>🗺️</span><span>Mapa</span></button>
+      <button class="nav-btn locked" data-tab="suporte"><span>🛠️</span><span>Suporte</span></button>
+    </nav>
+  </aside>
+  <div id="sidebarDim" class="sidebar-dim"></div>
+
+  <!-- Busca: Palette -->
+  <div id="palette" class="palette">
+    <div class="card">
+      <div class="p-2.5 border-b border-[var(--line)] flex items-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="q" class="field !bg-transparent !border-0 !shadow-none" placeholder="Buscar: ocorrências, tickets, câmeras, mapa e ações…" autofocus>
+        <span class="k">Esc</span>
+      </div>
+      <!-- MELHORIA: Histórico de buscas -->
+      <div id="qHistory" class="p-2 flex flex-wrap gap-2 text-xs border-b border-[var(--line)]"></div>
+      <div id="qResults" class="max-h-[52vh] overflow-auto"></div>
+      <div class="p-2 text-[11px]" style="color:var(--muted)">Use ↑↓ para navegar • Enter para abrir • / abre a busca</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-4">
+    <!-- Login -->
+    <section id="tab-login" class="metal p-6">
+      <h2 class="text-2xl font-bold">Identificação do Operador</h2>
+      <p class="text-sm mt-1" style="color:var(--muted)">Informe seu nome e matrícula para iniciar.</p>
+      <form id="formLogin" class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 max-w-2xl">
+        <div>
+          <label class="text-xs" style="color:var(--muted)">Nome</label>
+          <input id="nomeUsuario" class="field" placeholder="Ex.: Ana Rocha" required>
+        </div>
+        <div>
+          <label class="text-xs" style="color:var(--muted)">Matrícula</label>
+          <input id="matriculaUsuario" class="field" inputmode="numeric" pattern="[0-9]{4,}" placeholder="Somente números" required>
+        </div>
+        <div class="md:col-span-2 flex items-center gap-3">
+            <button class="btn" type="submit">Entrar</button>
+            <button id="btnLimpar" type="button" class="btn-ghost">Limpar</button>
+            <!-- MELHORIA: "Lembrar-me" para conveniência -->
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" id="rememberMe" checked>
+                <span>Lembrar-me</span>
+            </label>
+        </div>
+      </form>
+      <p class="text-xs mt-2" style="color:var(--muted)">Acesso simulado (sem autenticação real).</p>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="tab-dashboard" class="metal p-6 hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-bold">Painel Geral</h2>
+          <p class="text-sm" style="color:var(--muted)">Resumo do sistema</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="filtroCargaDash" class="field w-48">
+            <option value="todas" selected>Todas as cargas</option>
+          </select>
+          <select id="filtroSetor" class="field w-44">
+            <option value="todos" selected>Todos os setores</option>
+            <option>Setor A</option><option>Setor B</option><option>Setor C</option><option>Setor D</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- MELHORIA: Adicionado indicador de tendência (setas) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="solid p-4 rounded-xl text-center">
+            <h3 class="font-semibold" style="color:var(--danger)">SEVERIDADE ALTA</h3>
+            <div id="countAlta" class="text-4xl font-bold mt-2 flex items-center justify-center gap-2">0 <span class="text-lg"></span></div>
+        </div>
+        <div class="solid p-4 rounded-xl text-center">
+            <h3 class="font-semibold" style="color:var(--warn)">SEVERIDADE MÉDIA</h3>
+            <div id="countMedia" class="text-4xl font-bold mt-2 flex items-center justify-center gap-2">0 <span class="text-lg"></span></div>
+        </div>
+        <div class="solid p-4 rounded-xl text-center">
+            <h3 class="font-semibold" style="color:var(--ok)">SEVERIDADE BAIXA</h3>
+            <div id="countBaixa" class="text-4xl font-bold mt-2 flex items-center justify-center gap-2">0 <span class="text-lg"></span></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 mt-4">
+        <div class="solid p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold">Ocorrências Recentes</h3>
+              <p class="text-xs" style="color:var(--muted)">Clique para ações • Passe o mouse para interagir com gráficos</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="chip text-xs">Últimas 8</span>
+              <button id="btnVerTudo" class="btn-ghost text-xs">Ver tudo</button>
+            </div>
+          </div>
+          <div id="listaOcorrencias" class="mt-4 grid sm:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+        </div>
+
+        <!-- GRÁFICOS DE VAZAMENTO -->
+        <div class="solid p-4 rounded-xl">
+            <h3 class="font-semibold mb-2">Gráficos de Vazamento de Produto</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
+                <div class="metal rounded-xl p-4">
+                  <h3 class="font-semibold mb-2 text-sm">Ocorrências por Tipo</h3>
+                  <div class="chart-wrap"><canvas id="chartTipos"></canvas></div>
+                </div>
+                <div class="metal rounded-xl p-4">
+                  <h3 class="font-semibold mb-2 text-sm">Incidentes por Setor</h3>
+                  <div class="chart-wrap"><canvas id="chartSetor"></canvas></div>
+                </div>
+                <div class="metal rounded-xl p-4">
+                  <h3 class="font-semibold mb-2 text-sm">Gravidades</h3>
+                  <div class="chart-wrap"><canvas id="chartGrav"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRÁFICOS DE OPERAÇÕES SUJAS -->
+        <div class="solid p-4 rounded-xl">
+            <h3 class="font-semibold mb-2">Gráficos de Operações Sujas</h3>
+             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
+                <div class="metal rounded-xl p-4">
+                  <h3 class="font-semibold mb-2 text-sm">Ocorrências por Berço</h3>
+                  <div class="chart-wrap"><canvas id="chartOpSujasLocal"></canvas></div>
+                </div>
+                 <div class="metal rounded-xl p-4">
+                  <h3 class="font-semibold mb-2 text-sm">Gravidades</h3>
+                  <div class="chart-wrap"><canvas id="chartOpSujasGrav"></canvas></div>
+                </div>
+                <div class="metal rounded-xl p-4 flex items-center justify-center">
+                    <p class="text-sm text-center" style="color:var(--muted)">Mais gráficos em breve.</p>
+                </div>
+            </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Desempenho -->
+    <section id="tab-desempenho" class="metal p-6 hidden">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="text-xl font-bold">Desempenho do Sistema</h2>
+                <p class="text-sm" style="color:var(--muted)">Análise de métricas chave</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+            <div class="metal rounded-xl p-4">
+                <h3 class="font-semibold mb-2 text-sm">Tempo Médio de Resolução (min)</h3>
+                <div class="chart-wrap"><canvas id="chartTempoMedio"></canvas></div>
+            </div>
+            <div class="metal rounded-xl p-4">
+                <h3 class="font-semibold mb-2 text-sm">Ocorrências por Hora</h3>
+                <div class="chart-wrap"><canvas id="chartOcorrenciasHora"></canvas></div>
+            </div>
+            <div class="metal rounded-xl p-4">
+                <h3 class="font-semibold mb-2 text-sm">Ocorrências por Categoria</h3>
+                <div class="chart-wrap"><canvas id="chartCategoriasGeral"></canvas></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Acompanhamento -->
+    <section id="tab-acomp" class="metal p-6 hidden">
+      <div class="flex flex-wrap items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold">Acompanhamento de Ocorrências</h2>
+          <p class="text-sm" style="color:var(--muted)">Clique no card para ações</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <input id="acIni" type="date" class="field w-40">
+          <input id="acFim" type="date" class="field w-40">
+          <button id="acFiltrar" class="btn-ghost">Filtrar</button>
+          <button id="acExport" class="btn-ghost">Exportar CSV</button>
+          <button id="btnPush" class="btn">Enviar push</button>
+        </div>
+      </div>
+      <div id="listaChamados" class="mt-4 flex flex-col gap-3"></div>
+    </section>
+
+    <!-- Relatórios -->
+    <section id="tab-relatorios" class="metal p-6 hidden">
+      <h2 class="text-xl font-bold">Relatórios</h2>
+      <p class="text-sm -mt-1" style="color:var(--muted)">Pré-visualize, baixe e registre envios</p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <!-- Relatório de Incidentes (Vazamentos) -->
+        <div class="metal p-4 rounded-xl">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">Relatório de Incidentes</h3>
+          </div>
+          <form id="formInc" class="grid gap-3 mt-3">
+            <div class="grid grid-cols-2 gap-3">
+              <input id="incIdBusca" class="field" placeholder="Filtrar por ID (opcional)">
+              <input id="incPeriodo" class="field" type="month">
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs" style="color:var(--muted)">Destinatários:</span>
+              <label class="chip text-xs"><input id="incDestOp" class="mr-2" type="checkbox" checked>Ger. Operacional</label>
+              <label class="chip text-xs"><input id="incDestAmb" class="mr-2" type="checkbox" checked>Ger. Ambiental</label>
+              <label class="chip text-xs"><input id="incDestGer" class="mr-2" type="checkbox" checked>Ger. Geral</label>
+              <label class="chip text-xs"><input id="incDestSeg" class="mr-2" type="checkbox" checked>Segurança</label>
+              <label class="chip text-xs"><input id="incDestLimp" class="mr-2" type="checkbox" checked>Limpeza</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="incPreviewBtn" class="btn-ghost" type="button">Pré-visualizar</button>
+              <button id="incEnviarBtn" class="btn" type="button">Enviar & Baixar PDF</button>
+              <button id="incGeminiBtn" class="btn" type="button">✨ Gerar Resumo</button>
+            </div>
+            <div id="incPreviewBox" class="hidden border border-[var(--line)] rounded-md p-3 text-sm"></div>
+            <div id="incGeminiBox" class="hidden border border-[var(--line)] rounded-md p-3 text-sm mt-2"></div>
+          </form>
+        </div>
+
+        <!-- Relatório de Perdas (Vazamentos) -->
+        <div class="metal p-4 rounded-xl">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">Relatório de Perdas</h3>
+          </div>
+          <form id="formPerdas" class="grid gap-3 mt-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+              <select id="selPeriodoPerda" class="field">
+                <option value="diario">Diário</option>
+                <option value="semanal">Semanal</option>
+                <option value="mensal" selected>Mensal</option>
+                <option value="trimestral">Trimestral</option>
+              </select>
+              <input id="dtIni" class="field" type="date">
+              <input id="dtFim" class="field" type="date">
+              <select id="filtroCargaPerda" class="field">
+                <option value="todas">Todas as cargas</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <div class="p-3 rounded-lg border border-[var(--line)]">
+                <div class="text-xs" style="color:var(--muted)">Total Perdas (kg)</div>
+                <div id="sumKg" class="text-2xl font-bold">0</div>
+              </div>
+              <div class="p-3 rounded-lg border border-[var(--line)]">
+                <div class="text-xs" style="color:var(--muted)">Custo Estimado</div>
+                <div id="sumRs" class="text-2xl font-bold">0</div>
+              </div>
+              <div class="p-3 rounded-lg border border-[var(--line)]">
+                <div class="text-xs" style="color:var(--muted)">Horas de Paralisação</div>
+                <div id="sumHoras" class="text-2xl font-bold">0</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="perdPreviewBtn" class="btn-ghost" type="button">Pré-visualizar</button>
+              <button id="perdEnviarBtn" class="btn" type="button">Enviar & Baixar PDF</button>
+              <button id="perdGeminiBtn" class="btn" type="button">✨ Gerar Resumo</button>
+            </div>
+            <div id="perdPreviewBox" class="hidden border border-[var(--line)] rounded-md p-3 text-sm"></div>
+            <div id="perdGeminiBox" class="hidden border border-[var(--line)] rounded-md p-3 text-sm mt-2"></div>
+          </form>
+        </div>
+        
+        <!-- ATUALIZADO: Relatório Geral e Análise de IA -->
+        <div class="lg:col-span-2 metal p-4 rounded-xl">
+            <h3 class="font-semibold">Relatório Geral e Análise de IA</h3>
+            <form id="formGeral" class="grid gap-3 mt-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div class="md:col-span-1">
+                        <label class="text-xs" style="color:var(--muted)">Selecione o Período</label>
+                        <select id="selPeriodoGeral" class="field">
+                            <option value="mensal" selected>Último Mês</option>
+                            <option value="trimestral">Último Trimestre</option>
+                            <option value="semestral">Último Semestre</option>
+                            <option value="anual">Último Ano</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-xs" style="color:var(--muted)">Destinatários</label>
+                         <div class="flex flex-wrap items-center gap-2 mt-1">
+                            <label class="chip text-xs"><input id="geralDestOp" class="mr-2" type="checkbox" checked>Ger. Operacional</label>
+                            <label class="chip text-xs"><input id="geralDestGer" class="mr-2" type="checkbox" checked>Ger. Geral</label>
+                        </div>
+                    </div>
+                </div>
+               
+                <div class="flex items-center gap-2">
+                    <button id="geralPreviewBtn" class="btn-ghost" type="button">Pré-visualizar</button>
+                    <button id="geralEnviarBtn" class="btn" type="button">Enviar & Baixar PDF</button>
+                    <button id="geralGeminiBtn" class="btn" type="button">✨ Gerar Análise com IA</button>
+                </div>
+                <div id="geralPreviewBox" class="hidden border border-[var(--line)] rounded-md p-3 text-sm"></div>
+                <div id="geralGeminiBox" class="hidden border border-[var(--line)] rounded-md p-3 text-sm mt-2"></div>
+            </form>
+        </div>
+      </div>
+
+      <div class="metal p-4 rounded-xl mt-4">
+        <h3 class="font-semibold mb-2">Histórico de Envios/Downloads</h3>
+        <div id="histDownloads" class="flex flex-col gap-2"></div>
+      </div>
+    </section>
+
+    <!-- Controle -->
+    <section id="tab-controle" class="metal p-6 hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold">Controle de Ocorrências</h2>
+          <p class="text-sm" style="color:var(--muted)">Clique no card para ações</p>
+        </div>
+        <button id="btnRefreshCtrl" class="btn-ghost">Atualizar</button>
+      </div>
+      <div id="ctrlList" class="mt-4 flex flex-col gap-3"></div>
+    </section>
+
+    <!-- Câmeras (visual limpo) -->
+    <section id="tab-cameras" class="metal p-6 hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-bold">Painel de Câmeras</h2>
+          <p class="text-sm" style="color:var(--muted)">Layouts • Arraste • PiP</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1 border border-[var(--line)] rounded-full p-1 bg-[rgba(255,255,255,.03)]">
+            <button class="btn-ghost text-xs rounded-full px-3" data-layout="2">2x2</button>
+            <button class="btn-ghost text-xs rounded-full px-3" data-layout="3">3x3</button>
+            <button class="btn-ghost text-xs rounded-full px-3" data-layout="4">4x4</button>
+          </div>
+          <div class="flex items-center gap-2 border border-[var(--line)] rounded-full px-2 py-1 bg-[rgba(255,255,255,.03)]">
+            <label class="text-xs" for="toggleSel" style="color:var(--muted)">Seleção</label>
+            <input id="toggleSel" type="checkbox">
+          </div>
+          <div class="flex items-center gap-1 border border-[var(--line)] rounded-full p-1 bg-[rgba(255,255,255,.03)]">
+            <button id="btnSelectAll" class="btn-ghost text-xs rounded-full px-3">Marcar</button>
+            <button id="btnClearSel" class="btn-ghost text-xs rounded-full px-3">Limpar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 flex flex-wrap items-center gap-2">
+        <input id="layoutNome" class="field w-56" placeholder="Nome do layout">
+        <button id="salvarLayout" class="btn-ghost text-xs">Salvar</button>
+        <select id="layoutsSalvos" class="field w-56"><option value="">Carregar Layout</option></select>
+        <button id="aplicarLayout" class="btn-ghost text-xs">Aplicar</button>
+        <span class="text-xs" style="color:var(--muted)">Dica: arraste um bloco sobre o outro para reordenar</span>
+      </div>
+
+      <div id="camActions" class="hidden mt-3 flex flex-wrap items-center gap-2">
+        <span id="selCount" class="chip">0 selecionada(s)</span>
+        <button id="btnEditOne" class="btn-ghost text-xs">Editar</button>
+        <button id="btnHighlight" class="btn-ghost text-xs">Destacar</button>
+        <button id="btnPiP" class="btn-ghost text-xs">PiP</button>
+      </div>
+
+      <div id="gridCams" class="grid grid-cols-3 gap-3 mt-4"></div>
+      <div id="pip" class="hidden fixed right-4 bottom-4 z-40 w-[260px] h-[160px] rounded-xl overflow-hidden border border-[var(--line)] bg-[rgba(0,0,0,.2)] backdrop-blur-sm"></div>
+    </section>
+
+    <!-- Mapa -->
+    <section id="tab-mapa" class="metal p-6 hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-bold">Mapa Interativo do Porto</h2>
+          <p class="text-sm" style="color:var(--muted)">Ocorrências em tempo real via Leaflet.js</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+           <button id="toggleHeatmap" class="btn-ghost text-xs rounded-full px-3">Alternar Heatmap</button>
+           <button id="clearMap" class="btn-ghost text-xs rounded-full px-3">Limpar Pinos</button>
+        </div>
+      </div>
+      <div id="leafletMap" class="mt-3 h-[60vh] rounded-xl border border-[var(--line)] z-10"></div>
+    </section>
+
+    <!-- Suporte -->
+    <section id="tab-suporte" class="metal p-6 hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold">Suporte Técnico</h2>
+          <p class="text-sm" style="color:var(--muted)">Tickets • Comentários • Anexos</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="tFiltro" class="field w-56" placeholder="Buscar #ID, assunto ou tag">
+          <select id="tStatus" class="field w-40">
+            <option value="todos">Todos</option>
+            <option value="aberto">Abertos</option>
+            <option value="fechado">Fechados</option>
+          </select>
+          <button id="btnExportTickets" class="btn-ghost text-xs">Exportar</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+        <div class="solid p-4 rounded-xl lg:col-span-1">
+          <h3 class="font-semibold">Abrir Ticket</h3>
+          <form id="formTicket" class="grid gap-3 mt-3">
+            <input id="tAssunto" class="field" placeholder="Assunto do problema" required>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="tSeveridade" class="field" required>
+                <option>Baixa</option><option>Média</option><option>Alta</option>
+              </select>
+              <select id="tCategoria" class="field" required>
+                <option>Infraestrutura</option><option>Aplicação</option><option>Rede</option><option>Outros</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="tDestino" class="field" required>
+                <option>Suporte N1</option><option>Suporte N2</option><option>TI</option><option>Operações</option>
+              </select>
+              <input id="tResponsavel" class="field" placeholder="Responsável (opcional)">
+            </div>
+            <input id="tTags" class="field" placeholder="Tags (separe por vírgula)">
+            <textarea id="tDesc" class="field" rows="4" placeholder="Descreva o problema" required></textarea>
+            <div class="grid grid-cols-1 gap-2">
+              <label class="text-xs" style="color:var(--muted)">Anexos (imagem/pdf até 2MB)</label>
+              <input id="tAnexos" type="file" class="field" multiple accept="image/*,application/pdf">
+              <div id="tPreviews" class="grid grid-cols-3 gap-2"></div>
+            </div>
+            <div class="flex items-center gap-2 justify-end">
+              <button type="reset" class="btn-ghost">Limpar</button>
+              <button class="btn" type="submit">Enviar</button>
+            </div>
+          </form>
+        </div>
+        <div class="solid p-4 rounded-xl lg:col-span-2">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold">Tickets</h3>
+            <button id="btnClearTickets" class="btn-ghost text-xs">Limpar</button>
+          </div>
+          <div id="listaTickets" class="mt-3 flex flex-col gap-2 text-sm"></div>
+        </div>
+      </div>
+
+      <div class="solid p-4 rounded-xl mt-4">
+        <h3 class="font-semibold">Histórico de Envios</h3>
+        <div id="histEnvios" class="text-sm mt-2 flex flex-col gap-2"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal Ajuda -->
+  <div id="modalHelp" class="palette">
+    <div class="card" style="width:min(720px,95vw)">
+      <div class="p-3 border-b border-[var(--line)] flex items-center justify-between">
+        <div class="font-semibold">Atalhos & Ajuda • AURA DATHUM</div>
+        <button id="closeHelp" class="icon-btn">✕</button>
+      </div>
+      <div class="p-3 text-sm grid grid-cols-2 gap-2">
+        <div><span class="chip">/</span> Abrir busca</div>
+        <div><span class="chip">M</span> Abrir/fechar menu</div>
+        <div><span class="chip">G</span> Nova ocorrência</div>
+        <div><span class="chip">Shift+?</span> Esta ajuda</div>
+      </div>
+      <div class="p-3 border-t border-[var(--line)] text-xs" style="color:var(--muted)">Dica: use a engrenagem no topo para Modo Foco e Alto Contraste.</div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">Pronto!</div>
+
+  <script>
+    // Estado
+    const state = {
+      theme:'light',
+      sidebar:false,
+      user:null,
+      notify:0,
+      notifications: [],
+      ocorrencias: [],
+      chamados: [],
+      downloads: [],
+      charts: { tipos:null, setor:null, grav:null, opSujasLocal:null, opSujasGrav:null, tempoMedio: null, ocorrenciasHora: null, chartCategoriasGeral: null },
+      cams: [],
+      camLayout: 3,
+      camSelectionMode: false,
+      selectedCams: new Set(),
+      editingCamId: null,
+      map: { leafletMap: null, markers: [], layers: {}, heatmap: null, heatmapVisible: false },
+      camLayouts: [],
+      focus:false,
+      contrast:false,
+      timers: { slaInterval:null },
+      searchHistory: [], // MELHORIA: Adicionado para histórico de busca
+      lastCounts: { alta: 0, media: 0, baixa: 0 } // MELHORIA: Para indicadores de tendência
+    };
+
+    let tickets = [];
+    let envios = [];
+
+    // Utils & Constantes
+    const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+    const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+    const sample=arr=>arr[Math.floor(Math.random()*arr.length)];
+    const id6=()=>String(rand(100000,999999));
+    const today=()=>new Date().toISOString().slice(0,10);
+    const nowHM=()=>{const d=new Date();return d.toTimeString().slice(0,5);};
+    const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    const TIPOS_PRODUTO=['Soja','Milho','Farelo de Soja', 'Fertilizantes'];
+    const TIPOS_FERTILIZANTES = ['NPK', 'DAP', 'MAP', 'AMONIA', 'FOSFATO', 'UREIA'];
+    const BERCOS_OP_SUJA = ['Berço 99', 'Berço 100', 'Berço 101', 'Berço 102', 'Berço 103', 'Berço 104', 'Berço 105', 'Berço 106', 'Berço 108'];
+    const SETORES=['Setor A','Setor B','Setor C','Setor D'];
+    const OPERATORS = ['Ana Rocha', 'Bruno Costa', 'Carlos Silva', 'Daniela Lima'];
+    const SLA_MIN={ 'Baixa':30, 'Média':20, 'Alta':10 }; // minutos
+    const fmtTS=()=>new Date().toLocaleString('pt-BR');
+    function showToast(m){ const t=$('#toast'); t.textContent=m; t.style.display='block'; t.style.opacity='0'; requestAnimationFrame(()=>{t.style.transition='opacity 160ms'; t.style.opacity='1';}); setTimeout(()=>{t.style.opacity='0'; setTimeout(()=>t.style.display='none',160)},1900); }
+    function copyToClipboard(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'absolute'; ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showToast(`ID #${text} copiado!`);
+        } catch (err) {
+            showToast('Falha ao copiar ID.');
+        }
+        document.body.removeChild(ta);
+    }
+    
+    // Funções para persistência de dados no localStorage
+    function saveState() {
+        try {
+            localStorage.setItem('auraState', JSON.stringify({
+                theme: state.theme,
+                ocorrencias: state.ocorrencias,
+                chamados: state.chamados.map(ch => ({ ...ch, createdAt: ch.createdAt.toISOString(), slaEnd: ch.slaEnd.toISOString(), resolvedAt: ch.resolvedAt ? ch.resolvedAt.toISOString() : null })),
+                downloads: state.downloads,
+                cams: state.cams,
+                camLayouts: state.camLayouts,
+                tickets: tickets,
+                envios: envios,
+                notifications: state.notifications,
+                searchHistory: state.searchHistory,
+                lastCounts: state.lastCounts
+            }));
+        } catch (e) {
+            console.error("Falha ao salvar o estado:", e);
+        }
+    }
+
+    function loadState() {
+        try {
+            const savedState = localStorage.getItem('auraState');
+            if (savedState) {
+                const parsed = JSON.parse(savedState);
+                state.theme = parsed.theme || 'light';
+                state.ocorrencias = parsed.ocorrencias || [];
+                state.chamados = (parsed.chamados || []).map(ch => ({ ...ch, createdAt: new Date(ch.createdAt), slaEnd: new Date(ch.slaEnd), resolvedAt: ch.resolvedAt ? new Date(ch.resolvedAt) : null }));
+                state.downloads = parsed.downloads || [];
+                state.cams = parsed.cams || [];
+                state.camLayouts = parsed.camLayouts || [];
+                tickets = parsed.tickets || [];
+                envios = parsed.envios || [];
+                state.notifications = parsed.notifications || [];
+                state.notify = state.notifications.length;
+                state.searchHistory = parsed.searchHistory || [];
+                state.lastCounts = parsed.lastCounts || { alta: 0, media: 0, baixa: 0 };
+                return true;
+            }
+        } catch (e) {
+            console.error("Falha ao carregar o estado:", e);
+        }
+        return false;
+    }
+
+
+    // --- Gemini API Integration ---
+    async function callGemini(prompt, retries = 3, delay = 1000) {
+        // NOTE: In a real environment, the API key is handled securely by the execution environment.
+        // This key is for demonstration purposes and will be managed by the platform.
+        const apiKey = "AIzaSyDRw9zWFJYKMBOkl3wrvvFlbTSdlfHZYAs"; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                if (response.status === 429 && retries > 0) { // Handle rate limiting
+                    console.warn(`Rate limited. Retrying in ${delay}ms...`);
+                    await new Promise(res => setTimeout(res, delay));
+                    return callGemini(prompt, retries - 1, delay * 2); // Exponential backoff
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                return candidate.content.parts[0].text;
+            } else {
+                console.error("Gemini API Response Error: ", JSON.stringify(result));
+                return "Não foi possível obter uma resposta válida da IA. A estrutura da resposta está inesperada.";
+            }
+        } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            if (retries > 0) {
+                console.warn(`Fetch error. Retrying in ${delay}ms...`);
+                await new Promise(res => setTimeout(res, delay));
+                return callGemini(prompt, retries - 1, delay * 2);
+            }
+            return "Erro ao comunicar com a API de IA. Verifique a conexão e tente novamente.";
+        }
+    }
+
+
+    // Tema / foco / contraste via engrenagem
+    function applyTheme(){ document.documentElement.classList.toggle('theme-light', state.theme==='light'); }
+    $('#btnTheme').addEventListener('click', ()=>{ state.theme = state.theme==='dark'?'light':'dark'; applyTheme(); saveState(); });
+    $('#btnSettings').addEventListener('click', (e)=>{ e.stopPropagation(); $('#settingsPanel').classList.toggle('show'); });
+    $('#openHelp').addEventListener('click', ()=>{ $('#settingsPanel').classList.remove('show'); $('#modalHelp').classList.add('show'); });
+    $('#closeHelp').addEventListener('click', ()=> $('#modalHelp').classList.remove('show'));
+    $('#setFocus').addEventListener('change', (e)=>{ state.focus=e.target.checked; document.body.classList.toggle('focus-mode', state.focus); showToast(state.focus?'Modo Foco ativado':'Modo Foco desativado'); });
+    $('#setContrast').addEventListener('change', (e)=>{ state.contrast=e.target.checked; document.body.classList.toggle('high-contrast', state.contrast); showToast(state.contrast?'Alto contraste on':'Alto contraste off'); });
+
+    // Fechar menus fora
+    document.addEventListener('click', (e)=>{
+      if(!e.target.closest('#notifPanel') && !e.target.closest('#btnNotifs')) $('#notifPanel').classList.remove('show');
+      if(!e.target.closest('#opBlock')) $('#opMenu')?.classList.remove('show');
+      if(!e.target.closest('#btnSettings')) $('#settingsPanel')?.classList.remove('show');
+      if(!e.target.closest('.occurrence-menu') && !e.target.closest('[data-occurrence-id]')) {
+          closeOccurrenceMenu();
+      }
+    });
+
+    // Sidebar
+    function setSidebar(open){
+      state.sidebar=open;
+      $('#sidebar')?.classList.toggle('open', open);
+      $('#sidebarDim')?.classList.toggle('show', open);
+    }
+    $('#btnSidebar').addEventListener('click', ()=> setSidebar(!state.sidebar));
+    $('#sidebarDim').addEventListener('click', ()=> setSidebar(false));
+
+    // Notificações
+    function showAlertBanner(text){
+      const b=document.getElementById('alertBanner'); if(!b) return; b.textContent='🚨 '+text; b.classList.remove('hidden');
+      let on=true; const blink=setInterval(()=>{ b.style.opacity=on?'.6':'1'; on=!on; }, 220);
+      setTimeout(()=>{ clearInterval(blink); b.classList.add('hidden'); b.style.opacity='1'; }, 4200);
+    }
+    function updateBadge(){ const b=$('#notifCount'); b.textContent=state.notify; b.classList.toggle('hidden', state.notify<=0); }
+    function renderNotifList(){
+      const box=$('#notifList'); box.innerHTML='';
+      if(!state.notifications.length){ box.innerHTML='<div class="text-xs" style="color:var(--muted)">Sem notificações.</div>'; return; }
+      state.notifications.slice().reverse().forEach(n=>{
+        const row=document.createElement('div');
+        row.className='border border-[var(--line)] rounded-md p-2';
+        row.innerHTML = `<div class="text-sm">${n.msg}</div><div class="text-[11px]" style="color:var(--muted)">${n.time}</div>`;
+        box.appendChild(row);
+      });
+    }
+    function addNotif(msg){ state.notifications.push({msg, time:fmtTS()}); state.notify++; updateBadge(); renderNotifList(); saveState(); }
+    $('#btnNotifs').addEventListener('click', (e)=>{ e.stopPropagation(); $('#notifPanel').classList.toggle('show'); });
+    $('#btnClearNotifs').addEventListener('click', ()=>{ state.notify=0; state.notifications = []; updateBadge(); renderNotifList(); saveState(); showToast('Notificações limpas'); });
+
+    // Perfil / Logout
+    $('#opBlock').addEventListener('click', ()=> $('#opMenu').classList.toggle('show'));
+    $('#btnLogout').addEventListener('click', (e)=>{
+      e.stopPropagation(); 
+      if (!$('#rememberMe').checked) {
+          localStorage.removeItem('auraUser');
+      }
+      state.user=null; showTab('login'); addNotif('Sessão encerrada'); $('#opBlock').classList.add('hidden'); $$('.nav-btn').forEach(b=> b.classList.add('locked'));
+      $('#formLogin').reset();
+    });
+
+    // Navegação
+    const tabs=['login','dashboard','acomp','relatorios', 'desempenho', 'controle','cameras','mapa','suporte'];
+    function showTab(k){
+      $$('.nav-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===k));
+      tabs.forEach(t=> $(`#tab-${t}`)?.classList.add('hidden'));
+      $(`#tab-${k}`)?.classList.remove('hidden');
+      setSidebar(false);
+      if(k==='dashboard'){ initCharts(); renderDashboard(); }
+      if(k==='acomp'){ renderChamados(); }
+      if(k==='controle'){ renderControle(); }
+      if(k==='cameras'){ if(!state.cams.length) initCams(); renderCameras(); loadLayouts(); }
+      if(k==='desempenho'){ initCharts(); renderDesempenho(); }
+      if(k==='mapa'){ 
+        if (!state.map.leafletMap) {
+            initLeafletMap();
+        }
+      }
+    }
+    $$('.nav-btn').forEach(b=> b.addEventListener('click', ()=>{
+      const to=b.dataset.tab;
+      if(!state.user && to!=='login'){ showToast('Faça login para acessar.'); return; }
+      showTab(to);
+    }));
+
+    // Login
+    $('#formLogin').addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const nome=($('#nomeUsuario').value||'').trim();
+      const mat=($('#matriculaUsuario').value||'').trim();
+      if(!nome || !/^[0-9]{4,}$/.test(mat)){ showToast('Preencha nome e matrícula (somente números).'); return; }
+      state.user={nome,mat}; 
+      if ($('#rememberMe').checked) {
+        localStorage.setItem('auraUser', JSON.stringify(state.user));
+      } else {
+        localStorage.removeItem('auraUser');
+      }
+      
+      $('#opBlock').classList.remove('hidden');
+      $('#opName').textContent=state.user.nome; $('#opMat').textContent=`MAT ${state.user.mat}`;
+      $('#opAvatar').textContent=state.user.nome.trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase() || 'OP';
+      $$('.nav-btn').forEach(b=> b.classList.remove('locked'));
+      $('#btnGerar').removeAttribute('data-locked');
+      addNotif(`Login efetuado por ${state.user.nome}`); showToast('Login efetuado!'); showTab('dashboard');
+    });
+    $('#btnLimpar').addEventListener('click', ()=>{ $('#nomeUsuario').value=''; $('#matriculaUsuario').value=''; });
+    
+    function checkSavedUser() {
+        try{
+          const saved=localStorage.getItem('auraUser');
+          if(saved){
+            state.user=JSON.parse(saved);
+            $('#nomeUsuario').value = state.user.nome;
+            $('#matriculaUsuario').value = state.user.mat;
+            $('#opBlock').classList.remove('hidden');
+            $('#opName').textContent=state.user.nome; $('#opMat').textContent=`MAT ${state.user.mat}`;
+            $('#opAvatar').textContent=state.user.nome.split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase();
+            $$('.nav-btn').forEach(b=> b.classList.remove('locked'));
+            $('#btnGerar').removeAttribute('data-locked');
+            return true;
+          }
+        } catch {}
+        return false;
+    }
+
+
+    // Gerar ocorrência
+    $('#btnGerar').addEventListener('click', ()=>{ if(!state.user){ showToast('Faça login para registrar ocorrência.'); return; } openOcModal(); });
+
+    // Modal Ocorrência (dinâmico)
+    function openOcModal(){
+      if($('#modalOc')) $('#modalOc').remove();
+      const html=`
+        <div class="palette show" id="modalOc" style="z-index:170">
+          <div class="card" style="width:min(720px,95vw)">
+            <div class="p-3 border-b border-[var(--line)] flex items-center justify-between">
+              <div class="font-semibold">Registrar Ocorrência (Dados Automáticos)</div>
+              <button class="icon-btn" id="ocFechar">✕</button>
+            </div>
+            <div class="p-4">
+              <form id="formOc" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="md:col-span-2">
+                    <label class="text-xs" style="color:var(--muted)">Tipo de Ocorrência</label>
+                    <select id="ocCategoria" class="field" required></select>
+                </div>
+                <div id="ocFieldsContainer" class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+              </form>
+              <div class="flex justify-end gap-2 mt-3">
+                <button class="btn-ghost" id="ocCancelar">Cancelar</button>
+                <button class="btn" id="ocSalvar">Confirmar e Salvar</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      document.body.insertAdjacentHTML('beforeend', html);
+      
+      const renderFields = (categoria) => {
+        const container = $('#ocFieldsContainer');
+        let fieldsHtml = '';
+        if (categoria === 'vazamento') {
+          fieldsHtml = `
+            <div><label class="text-xs" style="color:var(--muted)">Local</label><select id="ocLocal" class="field" required>${SETORES.map(s=>`<option>${s}</option>`).join('')}</select></div>
+            <div><label id="ocPlacaLabel" class="text-xs" style="color:var(--muted)">Placa do Veículo</label><input id="ocPlaca" class="field" placeholder="AAA-1A23" required></div>
+            <div><label class="text-xs" style="color:var(--muted)">Tipo do Produto</label><select id="ocTipo" class="field" required>${TIPOS_PRODUTO.map(t=>`<option>${t}</option>`).join('')}</select></div>
+            <div id="fertilizanteBox" class="hidden"><label class="text-xs" style="color:var(--muted)">Tipo de Fertilizante</label><select id="ocFertilizanteTipo" class="field">${TIPOS_FERTILIZANTES.map(f => `<option>${f}</option>`).join('')}</select></div>
+            <div><label class="text-xs" style="color:var(--muted)">Quantidade (kg)</label><input id="ocKg" type="number" step="0.01" min="0" class="field no-spin" required></div>
+            <div class="md:col-span-2"><label class="text-xs" style="color:var(--muted)">Gravidade</label><select id="ocGrav" class="field" required><option>Baixa</option><option>Média</option><option>Alta</option></select></div>
+          `;
+        } else { // op_suja
+          fieldsHtml = `
+            <div><label class="text-xs" style="color:var(--muted)">Local</label><select id="ocLocal" class="field" required>${BERCOS_OP_SUJA.map(b=>`<option>${b}</option>`).join('')}</select></div>
+            <div><label id="ocPlacaLabel" class="text-xs" style="color:var(--muted)">Nome do Navio</label><input id="ocPlaca" class="field" placeholder="Ex: MSC Seaview" required></div>
+            <div class="md:col-span-2"><label class="text-xs" style="color:var(--muted)">Gravidade</label><select id="ocGrav" class="field" required><option>Baixa</option><option>Média</option><option>Alta</option></select></div>
+          `;
+        }
+        container.innerHTML = fieldsHtml;
+        
+        if ($('#ocTipo')) {
+            $('#ocTipo').addEventListener('change', () => {
+                 $('#fertilizanteBox').classList.toggle('hidden', $('#ocTipo').value !== 'Fertilizantes');
+            });
+        }
+      };
+
+      const ocCategoriaSelect = $('#ocCategoria');
+      ocCategoriaSelect.innerHTML = `<option value="vazamento">Vazamento de Produto</option><option value="op_suja">Operação Suja</option>`;
+      ocCategoriaSelect.addEventListener('change', (e) => renderFields(e.target.value));
+
+      const randomCategory = sample(['vazamento', 'op_suja']);
+      ocCategoriaSelect.value = randomCategory;
+      renderFields(randomCategory);
+
+      // Auto-preencher dados
+      if (randomCategory === 'vazamento') {
+          $('#ocLocal').value = sample(SETORES);
+          $('#ocPlaca').value = `${sample(['A','B','C'])}${sample(['A','B','C'])}${sample(['A','B','C'])}-${rand(1,9)}${sample(['A','B','C'])}${rand(0,9)}${rand(0,9)}`;
+          $('#ocTipo').value = sample(TIPOS_PRODUTO);
+          if ($('#ocTipo').value === 'Fertilizantes') {
+              $('#ocFertilizanteTipo').value = sample(TIPOS_FERTILIZANTES);
+          }
+          $('#ocKg').value = rand(1, 50);
+          $('#ocGrav').value = sample(['Baixa','Média','Alta']);
+          $('#fertilizanteBox').classList.toggle('hidden', $('#ocTipo').value !== 'Fertilizantes');
+      } else {
+          $('#ocLocal').value = sample(BERCOS_OP_SUJA);
+          $('#ocPlaca').value = sample(['MSC Preziosa', 'Costa Firenze', 'Lirica', 'Seaview']);
+          $('#ocGrav').value = sample(['Baixa','Média','Alta']);
+      }
+      
+      $('#ocFechar').addEventListener('click', ()=> $('#modalOc').remove());
+      $('#ocCancelar').addEventListener('click', ()=> $('#modalOc').remove());
+
+      $('#ocSalvar').addEventListener('click', ()=>{
+        const categoria = $('#ocCategoria').value;
+        const o = {
+          id: id6(), data: today(), hora: nowHM(),
+          local: $('#ocLocal').value, gravidade: $('#ocGrav').value,
+          categoria: categoria,
+        };
+
+        if (categoria === 'vazamento') {
+          o.placa = $('#ocPlaca').value.trim();
+          o.tipo = $('#ocTipo').value;
+          o.kg = Number($('#ocKg').value || 0);
+          o.custo = Number((o.kg * (o.gravidade==='Alta'?15.2:o.gravidade==='Média'?9.8:6.3)).toFixed(2));
+          if (o.tipo === 'Fertilizantes') o.subtipo = $('#ocFertilizanteTipo').value;
+        } else {
+          o.navio = $('#ocPlaca').value.trim(); o.placa = o.navio;
+          o.tipo = "Operação Suja"; o.kg = 0; o.custo = 0;
+        }
+        
+        const createdAt=new Date(); const slaMinutes=SLA_MIN[o.gravidade]||30;
+        const ch={ o, status:'Aguardando', push:false, setores:{Seguranca:true, Limpeza:true, Ambiental:false}, createdAt, slaEnd:new Date(createdAt.getTime()+slaMinutes*60000), timeline:[ {ts:fmtTS(), text:`Criada por ${state.user?.nome||'Operador'}`}, {ts:fmtTS(), text:'Setores acionados'} ], operator: state.user.nome };
+        state.ocorrencias.unshift(o); state.chamados.unshift(ch);
+        
+        $('#modalOc').remove();
+        showToast('Ocorrência registrada com sucesso!');
+
+        addNotif(`Ocorrência #${o.id} registrada (${o.gravidade})`);
+        
+        if(o.gravidade==='Alta' || o.gravidade==='Média'){
+          showAlertBanner(`Ocorrência ${o.gravidade} • #${o.id} • ${o.local}`);
+          const alert=document.createElement('div');
+          alert.className='palette show'; alert.style.zIndex='175';
+          const gravColor = o.gravidade==='Alta'?'var(--danger)':'var(--warn)';
+          alert.innerHTML=`<div class='card' style='width:min(520px,92vw)'>
+            <div class='p-3 border-b border-[var(--line)] flex items-center justify-between'>
+              <div class='font-semibold text-lg' style="color:${gravColor}">🚨 Alerta de Ocorrência 🚨</div>
+              <button class='icon-btn btn-close'>✕</button>
+            </div>
+            <div class='p-4 text-sm grid gap-2'>
+                <div><strong>Gravidade:</strong> <span class='chip' style='border-color:${gravColor};color:${gravColor}'>${o.gravidade}</span></div>
+                <div><strong>ID:</strong> #${o.id}</div>
+                <div><strong>Local:</strong> ${o.local}</div>
+                <div><strong>Tipo:</strong> ${o.tipo} ${o.subtipo ? `(${o.subtipo})` : ''}</div>
+                ${o.navio ? `<div><strong>Navio:</strong> ${o.navio}</div>` : ''}
+                ${(o.placa && !o.navio) ? `<div><strong>Placa:</strong> ${o.placa}</div>` : ''}
+            </div>
+            <div class='p-3 border-t border-[var(--line)] flex justify-end'><button class='btn btn-close'>Confirmar Ciência</button></div>
+          </div>`;
+          alert.addEventListener('click', (e)=>{ if(e.target===alert || e.target.closest('.btn-close')) alert.remove(); });
+          document.body.appendChild(alert);
+        }
+        
+        setTimeout(()=>{ ch.status='Em Análise'; ch.timeline.push({ts:fmtTS(), text:'Status alterado para Em Análise'}); renderChamados(); renderControle(); saveState() }, 10000);
+        setTimeout(()=>{ ch.status='Resolvido'; ch.resolvedAt = new Date(); ch.timeline.push({ts:fmtTS(), text:'Status alterado para Resolvido'}); addNotif(`Ocorrência #${o.id} resolvida`); renderChamados(); renderControle(); saveState() }, 20000);
+        
+        renderDashboard(); updateCharts(); renderChamados(); renderControle();
+        addPointToMap(o);
+        startSLA();
+        saveState();
+      });
+    }
+
+    // SLA
+    function startSLA(){
+      if(state.timers.slaInterval) clearInterval(state.timers.slaInterval); // Limpa o timer anterior para evitar múltiplos intervalos
+      state.timers.slaInterval = setInterval(()=>{
+        $$('.sla-count').forEach(el=>{
+          const id=el.dataset.id; const ch=state.chamados.find(c=>c.o.id===id); if(!ch || ch.status === 'Resolvido') { el.textContent = 'Resolvido'; el.style.color = 'var(--ok)'; return; }
+          const diff=ch.slaEnd.getTime()-Date.now(); const t=Math.max(0, Math.floor(diff/1000));
+          const overdue = diff<=0; const mm=String(Math.floor(t/60)).padStart(2,'0'), ss=String(t%60).padStart(2,'0');
+          el.textContent = overdue? 'SLA estourado' : `${mm}:${ss}`;
+          el.style.color = overdue? 'var(--danger)' : (t<300? 'var(--warn)':'');
+          if(overdue && !ch._overNotif){ ch._overNotif=true; ch.timeline.push({ts:fmtTS(), text:'SLA estourado'}); addNotif(`SLA estourado #${ch.o.id}`); saveState(); }
+        });
+      }, 1000);
+    }
+    
+    // Função para renderizar um estado vazio genérico
+    function renderEmptyState(containerSelector, icon, title, text) {
+        const container = $(containerSelector);
+        if (!container) return;
+        container.innerHTML = `
+            <div class="empty-state">
+                ${icon}
+                <h4 class="font-semibold text-lg">${title}</h4>
+                <p class="text-sm">${text}</p>
+            </div>`;
+    }
+
+    // Acompanhamento
+    $('#acFiltrar').addEventListener('click', renderChamados);
+    $('#acExport').addEventListener('click', ()=>{
+      const {list}=getChamadosFiltrados(); if(!list.length){ showToast('Nada para exportar'); return; }
+      const csv=['id;data;hora;local;tipo;subtipo;kg;gravidade;status;SLA_min_restantes'];
+      list.forEach(ch=>{
+        const sla = Math.ceil((ch.slaEnd - new Date())/60000);
+        csv.push(`${ch.o.id};${ch.o.data};${ch.o.hora};${ch.o.local};${ch.o.tipo};${ch.o.subtipo||''};${ch.o.kg};${ch.o.gravidade};${ch.status};${sla}`);
+      });
+      const blob=new Blob([csv.join('\n')],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='ocorrencias.csv'; a.click(); URL.revokeObjectURL(url);
+      showToast('CSV exportado');
+    });
+    function getChamadosFiltrados(){ const ini=$('#acIni').value||'0000-01-01', fim=$('#acFim').value||'9999-12-31'; return {list: state.chamados.filter(ch=> ch.o.data>=ini && ch.o.data<=fim )}; }
+    function renderChamados(){
+      const box=$('#listaChamados'); box.innerHTML='';
+      const {list}=getChamadosFiltrados();
+      if(!list.length){ 
+          renderEmptyState('#listaChamados', 
+            '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+            'Nenhuma Ocorrência',
+            'Não há ocorrências registradas para o período selecionado.'
+          );
+          return; 
+      }
+      list.slice(0,100).forEach(ch=>{
+        const el=document.createElement('div'); el.className='border border-[var(--line)] rounded-xl p-3 flex flex-col gap-2 solid cursor-pointer';
+        el.dataset.occurrenceId = ch.o.id;
+        const slaLeft = Math.max(0, Math.floor((ch.slaEnd - new Date())/1000));
+        el.innerHTML=`
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-sm font-semibold flex items-center gap-2">
+                 #${ch.o.id} • ${ch.o.tipo} ${ch.o.subtipo ? `(${ch.o.subtipo})`:''} ${ch.o.kg > 0 ? `• ${ch.o.kg} kg` : ''}
+              </div>
+              <div class="text-xs mt-1" style="color:var(--muted)">${ch.o.data} ${ch.o.hora} • ${ch.o.local} • ${ch.o.navio ? `Navio: ${ch.o.navio}` : `Placa: ${ch.o.placa}`}</div>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <span class="chip" style="border-color:${ch.setores.Seguranca?'var(--ok)':'var(--line)'}">Segurança ${ch.setores.Seguranca?'• OK':''}</span>
+                <span class="chip" style="border-color:${ch.setores.Limpeza?'var(--ok)':'var(--line)'}">Limpeza ${ch.setores.Limpeza?'• OK':''}</span>
+                <span class="chip" style="border-color:${ch.setores.Ambiental?'var(--ok)':'var(--line)'}">Ambiental ${ch.setores.Ambiental?'• OK':''}</span>
+                <span class="chip">Push ${ch.push?'• Sim':'• Não'}</span>
+              </div>
+            </div>
+            <div class="text-right flex-shrink-0 ml-4">
+              <div class="chip mb-1">Status: <span class="font-semibold ml-1">${ch.status}</span></div>
+              <div class="chip sla-count" data-id="${ch.o.id}">${String(Math.floor(slaLeft/60)).padStart(2,'0')}:${String(slaLeft%60).padStart(2,'0')}</div>
+            </div>
+          </div>
+          <div class="mt-2 border-t border-[var(--line)] pt-2">
+            <div class="text-xs font-semibold mb-1" style="color:var(--muted)">Linha do Tempo</div>
+            <div class="flex flex-col gap-1">
+              ${ch.timeline.map(t=> `<div class="text-xs"><span class="chip">${t.ts}</span> ${t.text}</div>`).join('')}
+            </div>
+          </div>`;
+        box.appendChild(el);
+        el.addEventListener('mouseenter', () => handleMapHighlight(ch.o.id, true));
+        el.addEventListener('mouseleave', () => handleMapHighlight(ch.o.id, false));
+      });
+      startSLA();
+    }
+    $('#btnPush').addEventListener('click', ()=>{
+      if(!state.chamados.length){ showToast('Nenhum chamado para enviar push.'); return; }
+      let affected=0;
+      state.chamados.forEach(ch=>{
+        if(!ch.push){
+          const hadPending = !ch.setores.Seguranca || !ch.setores.Limpeza || !ch.setores.Ambiental;
+          if(hadPending){ ch.setores.Seguranca=true; ch.setores.Limpeza=true; ch.setores.Ambiental=true; ch.timeline.push({ts:fmtTS(), text:'Push enviado para setores'}); affected++; }
+          ch.push = true;
+        }
+      });
+      if(affected>0){ addNotif(`Push enviado para ${affected} chamado(s)`); renderChamados(); saveState(); } else { showToast('Nenhum pendente.'); }
+    });
+
+    // Dashboard & Interação com Gráficos
+    function handleChartHighlight(occurrenceId, highlight = false) {
+        const o = state.ocorrencias.find(item => item.id === occurrenceId);
+        const ch = state.chamados.find(item => item.o.id === occurrenceId);
+        if (!o || !ch) return;
+        const highlightElement = (chart, index) => {
+            if (!chart || index < 0) return;
+            chart.setActiveElements(highlight ? [{ datasetIndex: 0, index }] : []);
+            chart.tooltip.setActiveElements(highlight ? [{ datasetIndex: 0, index }] : [], {x: 0, y: 0});
+            chart.update();
+        };
+
+        if (o.categoria === 'vazamento') {
+            highlightElement(state.charts.tipos, state.charts.tipos.data.labels.indexOf(o.tipo));
+            highlightElement(state.charts.setor, state.charts.setor.data.labels.indexOf(o.local));
+            highlightElement(state.charts.grav, state.charts.grav.data.labels.indexOf(o.gravidade));
+        } else if (o.categoria === 'op_suja') {
+            highlightElement(state.charts.opSujasLocal, state.charts.opSujasLocal.data.labels.indexOf(o.local));
+            highlightElement(state.charts.opSujasGrav, state.charts.opSujasGrav.data.labels.indexOf(o.gravidade));
+        }
+        
+        // Desempenho
+        highlightElement(state.charts.tempoMedio, state.charts.tempoMedio.data.labels.indexOf(o.gravidade));
+        const horaIndex = Math.floor(parseInt(o.hora.split(':')[0], 10) / 2);
+        highlightElement(state.charts.ocorrenciasHora, horaIndex);
+    }
+    function renderDashboard(){
+      updateDashboardCounters();
+      const selCarga=$('#filtroCargaDash'); const current=selCarga.value||'todas';
+      const labels=['todas', ...Array.from(new Set(state.ocorrencias.map(o=>o.tipo))).sort()];
+      selCarga.innerHTML = labels.map(v=>`<option value="${v}">${v[0].toUpperCase()+v.slice(1)}</option>`).join('');
+      selCarga.value = labels.includes(current)? current : 'todas';
+      const filtroC=$('#filtroCargaDash').value; const filtroS=$('#filtroSetor').value;
+      const list = state.ocorrencias.filter(o=> (filtroC==='todas'||o.tipo===filtroC) && (filtroS==='todos'||o.local===filtroS)).slice(0,8);
+      const box=$('#listaOcorrencias'); box.innerHTML='';
+      if(!list.length){ 
+          renderEmptyState('#listaOcorrencias',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+            'Nenhuma Ocorrência Recente',
+            'Clique em "Nova" para registrar a primeira ocorrência.'
+          );
+          return;
+      }
+      list.forEach(o=>{
+        const gravColor = o.gravidade==='Alta'?'var(--danger)':o.gravidade==='Média'?'var(--warn)':'var(--ok)';
+        const el=document.createElement('div'); el.className='p-4 border border-[var(--line)] rounded-xl hover:shadow-lg transition-all cursor-pointer';
+        el.dataset.occurrenceId = o.id;
+        el.innerHTML = `
+          <div class="flex items-center justify-between">
+             <div class="text-sm font-bold flex items-center gap-2">#${o.id}</div>
+            <span class="chip" style="border-color:${gravColor};color:${gravColor}">${o.gravidade}</span>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <div><span class="chip">Data</span> ${o.data}</div>
+            <div><span class="chip">Hora</span> ${o.hora}</div>
+            <div class="col-span-2"><span class="chip">Local</span> ${o.local}</div>
+            <div class="col-span-2"><span class="chip">${o.navio ? 'Navio' : 'Placa'}</span> ${o.placa}</div>
+            <div class="col-span-2"><span class="chip">Tipo</span> ${o.tipo} ${o.subtipo ? `(${o.subtipo})` : ''}</div>
+            ${o.kg > 0 ? `<div class="col-span-2"><span class="chip">Qtd</span> ${o.kg} kg</div>` : ''}
+            ${o.custo > 0 ? `<div class="col-span-2"><span class="chip">Custo</span> ${money(o.custo)}</div>` : ''}
+          </div>`;
+        box.appendChild(el);
+        el.addEventListener('mouseenter', () => handleMapHighlight(o.id, true));
+        el.addEventListener('mouseleave', () => handleMapHighlight(o.id, false));
+      });
+    }
+    $('#filtroCargaDash').addEventListener('change', ()=>{ renderDashboard(); updateCharts(); });
+    $('#filtroSetor').addEventListener('change', ()=>{ renderDashboard(); updateCharts(); });
+    $('#btnVerTudo').addEventListener('click', () => showTab('acomp'));
+
+    // Gráficos
+    function initCharts(){
+      const chartOptions = { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{color: 'var(--muted)'}}}, animation:{duration:700} };
+      const barChartOptions = { ...chartOptions, scales:{ y:{beginAtZero:true, ticks:{color:'var(--muted)'}}, x:{ticks:{color:'var(--muted)'}} } };
+
+      const colors1 = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444', '#64748b'];
+      const colors2 = ['#8b5cf6', '#a855f7', '#d946ef', '#c026d3', '#a21caf', '#86198f', '#701a75', '#581c87', '#4a044e'];
+      const colors3 = ['#22c55e', '#f59e0b', '#ef4444']; // Verde (Baixa), Amarelo (Média), Vermelho (Alta)
+
+      if(!state.charts.tipos){ const ctx=$('#chartTipos')?.getContext('2d'); if(ctx) state.charts.tipos=new Chart(ctx,{ type:'doughnut', data:{ labels:[], datasets:[{ data:[], backgroundColor: colors1 }]}, options:chartOptions }); }
+      if(!state.charts.setor){ const ctx=$('#chartSetor')?.getContext('2d'); if(ctx) state.charts.setor=new Chart(ctx,{ type:'bar', data:{ labels:SETORES, datasets:[{label:'Incidentes', data:[], backgroundColor:colors1.slice(0,4)}]}, options:barChartOptions }); }
+      if(!state.charts.grav){ const ctx=$('#chartGrav')?.getContext('2d'); if(ctx) state.charts.grav=new Chart(ctx,{ type:'doughnut', data:{ labels:['Baixa','Média','Alta'], datasets:[{ data:[], backgroundColor:colors3 }]}, options:chartOptions }); }
+      
+      if(!state.charts.opSujasLocal){ const ctx=$('#chartOpSujasLocal')?.getContext('2d'); if(ctx) state.charts.opSujasLocal=new Chart(ctx,{ type:'bar', data:{ labels:BERCOS_OP_SUJA, datasets:[{label:'Ocorrências', data:[], backgroundColor:colors2}]}, options:barChartOptions }); }
+      if(!state.charts.opSujasGrav){ const ctx=$('#chartOpSujasGrav')?.getContext('2d'); if(ctx) state.charts.opSujasGrav=new Chart(ctx,{ type:'doughnut', data:{ labels:['Baixa','Média','Alta'], datasets:[{ data:[], backgroundColor:colors3 }]}, options:chartOptions }); }
+      
+      // Gráficos de Desempenho
+      if(!state.charts.tempoMedio){ const ctx=$('#chartTempoMedio')?.getContext('2d'); if(ctx) state.charts.tempoMedio=new Chart(ctx,{ type:'bar', data:{ labels:['Baixa','Média','Alta'], datasets:[{label:'Tempo Médio (min)', data:[], backgroundColor:colors3}]}, options:barChartOptions }); }
+      if(!state.charts.ocorrenciasHora){ const ctx=$('#chartOcorrenciasHora')?.getContext('2d'); if(ctx) state.charts.ocorrenciasHora=new Chart(ctx,{ type:'line', data:{ labels:[], datasets:[{label:'Nº de Ocorrências', data:[], borderColor:'#3b82f6', tension: 0.2}]}, options:barChartOptions }); }
+      if(!state.charts.chartCategoriasGeral){ const ctx=$('#chartCategoriasGeral')?.getContext('2d'); if(ctx) state.charts.chartCategoriasGeral=new Chart(ctx,{ type:'doughnut', data:{ labels:['Vazamento de Produto', 'Operação Suja'], datasets:[{ data:[], backgroundColor: [colors1[0], colors1[3]] }]}, options:chartOptions }); }
+
+      updateCharts();
+    }
+    function updateCharts(){
+      const vazamentos = state.ocorrencias.filter(o => o.categoria === 'vazamento');
+      const opSujas = state.ocorrencias.filter(o => o.categoria === 'op_suja');
+
+      if(state.charts.tipos){
+        const labels = [...new Set(vazamentos.map(o=>o.tipo))];
+        state.charts.tipos.data.labels = labels; 
+        state.charts.tipos.data.datasets[0].data = labels.map(l=> vazamentos.filter(o=>o.tipo===l).length); 
+        state.charts.tipos.update();
+      }
+      if(state.charts.setor){
+        state.charts.setor.data.datasets[0].data = SETORES.map(s=> vazamentos.filter(o=>o.local===s).length);
+        state.charts.setor.update();
+      }
+      if(state.charts.grav){
+        state.charts.grav.data.datasets[0].data =['Baixa','Média','Alta'].map(lbl=> vazamentos.filter(o=>o.gravidade===lbl).length);
+        state.charts.grav.update();
+      }
+
+      if(state.charts.opSujasLocal){
+        state.charts.opSujasLocal.data.datasets[0].data = BERCOS_OP_SUJA.map(b => opSujas.filter(o=>o.local===b).length);
+        state.charts.opSujasLocal.update();
+      }
+      if(state.charts.opSujasGrav){
+        state.charts.opSujasGrav.data.datasets[0].data = ['Baixa','Média','Alta'].map(lbl => opSujas.filter(o=>o.gravidade===lbl).length);
+        state.charts.opSujasGrav.update();
+      }
+    }
+    
+    function updateDashboardCounters() {
+        const counts = {
+            alta: state.ocorrencias.filter(o => o.gravidade === 'Alta').length,
+            media: state.ocorrencias.filter(o => o.gravidade === 'Média').length,
+            baixa: state.ocorrencias.filter(o => o.gravidade === 'Baixa').length
+        };
+
+        const getTrend = (current, previous) => {
+            if (current > previous) return '<span style="color:var(--danger)">↑</span>';
+            if (current < previous) return '<span style="color:var(--ok)">↓</span>';
+            return '<span style="color:var(--muted)">-</span>';
+        };
+
+        $('#countAlta').innerHTML = `${counts.alta} ${getTrend(counts.alta, state.lastCounts.alta)}`;
+        $('#countMedia').innerHTML = `${counts.media} ${getTrend(counts.media, state.lastCounts.media)}`;
+        $('#countBaixa').innerHTML = `${counts.baixa} ${getTrend(counts.baixa, state.lastCounts.baixa)}`;
+
+        // Atualiza os contadores para a próxima comparação
+        state.lastCounts = counts;
+    }
+
+
+    // Desempenho
+    function renderDesempenho() {
+        // Tempo Médio de Resolução
+        if (state.charts.tempoMedio) {
+            const gravidades = ['Baixa', 'Média', 'Alta'];
+            const data = gravidades.map(g => {
+                const chamadosResolvidos = state.chamados.filter(c => c.o.gravidade === g && c.resolvedAt);
+                if (chamadosResolvidos.length === 0) return 0;
+                const totalDiff = chamadosResolvidos.reduce((sum, c) => sum + (c.resolvedAt.getTime() - c.createdAt.getTime()), 0);
+                return (totalDiff / chamadosResolvidos.length) / 60000; // Média em minutos
+            });
+            state.charts.tempoMedio.data.datasets[0].data = data;
+            state.charts.tempoMedio.update();
+        }
+
+        // Ocorrências por Hora
+        if (state.charts.ocorrenciasHora) {
+            const horas = Array(12).fill(0).map((_, i) => `${i * 2}:00-${(i * 2) + 1}:59`);
+            const data = Array(12).fill(0);
+            state.ocorrencias.forEach(o => {
+                const hora = parseInt(o.hora.split(':')[0], 10);
+                const index = Math.floor(hora / 2);
+                if(data[index] !== undefined) data[index]++;
+            });
+            state.charts.ocorrenciasHora.data.labels = horas;
+            state.charts.ocorrenciasHora.data.datasets[0].data = data;
+            state.charts.ocorrenciasHora.update();
+        }
+
+        // Ocorrências por Categoria
+        if (state.charts.chartCategoriasGeral) {
+            const data = [
+                state.ocorrencias.filter(o => o.categoria === 'vazamento').length,
+                state.ocorrencias.filter(o => o.categoria === 'op_suja').length
+            ];
+            state.charts.chartCategoriasGeral.data.datasets[0].data = data;
+            state.charts.chartCategoriasGeral.update();
+        }
+    }
+
+
+    // Controle
+    function renderControle(){
+      const box=$('#ctrlList'); box.innerHTML='';
+      if(!state.ocorrencias.length){ 
+          renderEmptyState('#ctrlList',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>',
+            'Tudo Sob Controle',
+            'Nenhuma ocorrência ativa para monitorar.'
+          );
+          return;
+      }
+      state.chamados.slice().forEach(ch=>{ // Usar state.chamados para ter o status
+        const o = ch.o;
+        const el=document.createElement('div'); el.className='border border-[var(--line)] rounded-xl p-3 flex flex-col gap-2 cursor-pointer';
+        el.dataset.occurrenceId = o.id;
+        el.innerHTML=`
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-semibold flex items-center gap-2">
+                 #${o.id} • ${o.tipo}
+              </div>
+              <div class="text-xs mt-1" style="color:var(--muted)">${o.data} ${o.hora} • ${o.local} • ${o.navio ? `Navio: ${o.navio}` : `Placa: ${o.placa}`}</div>
+            </div>
+            <div class="chip">Status: <span class="font-semibold ml-1">${ch.status}</span></div>
+          </div>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <span class="chip" style="border-color:${ch.setores.Seguranca?'var(--ok)':'var(--line)'}">Segurança ${ch.setores.Seguranca?'• OK':'• Pendente'}</span>
+            <span class="chip" style="border-color:${ch.setores.Limpeza?'var(--ok)':'var(--line)'}">Limpeza ${ch.setores.Limpeza?'• OK':'• Pendente'}</span>
+            <span class="chip" style="border-color:${ch.setores.Ambiental?'var(--ok)':'var(--line)'}">Ambiental ${ch.setores.Ambiental?'• OK':'• Pendente'}</span>
+          </div>`;
+        box.appendChild(el);
+        el.addEventListener('mouseenter', () => handleMapHighlight(o.id, true));
+        el.addEventListener('mouseleave', () => handleMapHighlight(o.id, false));
+      });
+    }
+    $('#btnRefreshCtrl').addEventListener('click', renderControle);
+    
+    // Câmeras
+    function initCams(){
+      state.cams = Array.from({length:12}).map((_,i)=>({
+        id:i+1, label:`Setor ${['A','B','C','D'][i%4]} • C${(i%6)+1}`,
+        feedType: i === 0 ? 'gif' : 'scan', 
+        feedUrl: i === 0 ? 'https://media1.tenor.com/m/S21fVd_T0tcAAAAC/scifi-scanner.gif' : '', 
+        highlight:false
+      }));
+    }
+    function renderCameras(){
+      const grid=$('#gridCams');
+      grid.style.gridTemplateColumns = `repeat(${state.camLayout}, minmax(0,1fr))`;
+      grid.innerHTML='';
+      state.cams.forEach(cam=>{
+        const tile=document.createElement('div');
+        tile.className='cam-tile';
+        tile.dataset.id=cam.id; tile.draggable=true;
+        tile.addEventListener('dragstart', (e)=>{ e.dataTransfer.setData('text/plain', String(cam.id)); });
+        tile.addEventListener('dragover', (e)=> e.preventDefault());
+        tile.addEventListener('drop', (e)=>{ e.preventDefault(); const fromId=Number(e.dataTransfer.getData('text/plain')); const toId=cam.id; reorderCams(fromId,toId); });
+
+        const head = document.createElement('div');
+        head.className='cam-head';
+        head.innerHTML = `<span class="cam-badge">${cam.label}</span>${cam.highlight?'<span class="cam-badge" style="background:var(--danger); border-color:transparent; color:white;">DESTAQUE</span>':''}`;
+
+        const tools = document.createElement('div');
+        tools.className='cam-toolbar';
+        tools.innerHTML=`<button class="mini btn-full" title="Tela cheia">⛶</button><button class="mini btn-edit" title="Editar">✎</button>`;
+
+        const content=document.createElement('div');
+        content.className='relative h-32 md:h-40 bg-black';
+        
+        if(cam.feedType==='gif' && cam.feedUrl){
+          const img=document.createElement('img');
+          img.src = cam.feedUrl; img.alt = 'Feed da câmera';
+          img.className = 'w-full h-full object-cover';
+          img.setAttribute('onerror',"this.parentElement.innerHTML = '<div class=\\'w-full h-full flex items-center justify-center text-xs text-red-400\\'>Falha ao carregar</div>'");
+          content.appendChild(img);
+        } else {
+          content.appendChild(makeScanLayer());
+        }
+
+        tile.addEventListener('click', (e)=>{
+          if(!state.camSelectionMode) return;
+          if(e.target.closest('.cam-toolbar')) return;
+          if(state.selectedCams.has(cam.id)) state.selectedCams.delete(cam.id); else state.selectedCams.add(cam.id);
+          renderCameras(); toggleCamActions();
+        });
+
+        tools.querySelector('.btn-edit').addEventListener('click', (e)=>{ e.stopPropagation(); openFeedEditor(cam.id); });
+        tools.querySelector('.btn-full').addEventListener('click', (e)=>{ e.stopPropagation(); openFull(cam); });
+
+        tile.appendChild(head); tile.appendChild(tools); tile.appendChild(content); 
+        if(state.selectedCams.has(cam.id)) tile.classList.add('select-ring');
+        grid.appendChild(tile);
+      });
+    }
+    function makeScanLayer(){
+      const box=document.createElement('div'); box.style.position='absolute'; box.style.inset='0';
+      box.innerHTML = `<div style="position:absolute; inset:0; background:radial-gradient(110% 60% at 50% 20%, rgba(31,111,235,.08), transparent 60%)"></div>
+        <div style="position:absolute; inset:0; display:grid; place-items:center; font-size:28px; opacity:.9">📹</div>`;
+      return box;
+    }
+    $$('[data-layout]').forEach(btn=> btn.addEventListener('click', ()=>{ state.camLayout = Number(btn.dataset.layout)||3; renderCameras(); }));
+    function toggleCamActions(){ const hasSel = state.selectedCams.size>0; $('#camActions').classList.toggle('hidden', !hasSel); $('#selCount').textContent = `${state.selectedCams.size} selecionada(s)`; $('#btnEditOne').disabled = state.selectedCams.size!==1; }
+    $('#toggleSel').addEventListener('change', (e)=>{ state.camSelectionMode = e.target.checked; if(!state.camSelectionMode) state.selectedCams.clear(); toggleCamActions(); renderCameras(); });
+    $('#btnSelectAll').addEventListener('click', ()=>{ if(!state.cams.length) return; state.cams.forEach(c=> state.selectedCams.add(c.id)); toggleCamActions(); renderCameras(); });
+    $('#btnClearSel').addEventListener('click', ()=>{ state.selectedCams.clear(); toggleCamActions(); renderCameras(); });
+    $('#btnHighlight').addEventListener('click', ()=>{ state.selectedCams.forEach(id=>{ const cam=state.cams.find(c=>c.id===id); if(cam) cam.highlight=!cam.highlight; }); renderCameras(); });
+    $('#btnEditOne').addEventListener('click', ()=>{ if(state.selectedCams.size!==1) return; const id=[...state.selectedCams][0]; openFeedEditor(id); });
+    $('#btnPiP').addEventListener('click', ()=>{
+      if(state.selectedCams.size!==1){ showToast('Selecione 1 câmera para PiP'); return; }
+      const id=[...state.selectedCams][0]; const cam=state.cams.find(c=>c.id===id); const pip=$('#pip'); pip.classList.remove('hidden');
+      pip.innerHTML = cam.feedType==='gif'&&cam.feedUrl? `<img src="${cam.feedUrl}" alt="PiP" style="width:100%;height:100%;object-fit:cover" onerror="this.src=''; this.style.display='none';">`:
+        `<div style="position:absolute; inset:0; display:grid; place-items:center; font-size:24px; opacity:.9">📹</div>`;
+      showToast('PiP ativado');
+    });
+    function reorderCams(fromId,toId){ const arr=state.cams; const i=arr.findIndex(c=>c.id===fromId), j=arr.findIndex(c=>c.id===toId); if(i<0||j<0) return; const [it]=arr.splice(i,1); arr.splice(j,0,it); renderCameras(); }
+    
+    function openFeedEditor(id){
+      state.editingCamId = id;
+      const cam = state.cams.find(c=>c.id===id);
+      if(!cam) return;
+      const html=`
+        <div class="palette show" id="modalFeed" style="z-index:165">
+          <div class="card" style="width:min(560px,95vw)">
+            <div class="p-3 border-b border-[var(--line)] flex items-center justify-between">
+              <div class="font-semibold">Editar feed da câmera: ${cam.label}</div>
+              <button class="icon-btn" id="closeFeed">✕</button>
+            </div>
+            <div class="p-4">
+              <form id="feedForm" class="grid gap-3">
+                <div>
+                  <label class="text-xs" style="color:var(--muted)">Tipo de feed</label>
+                  <select id="feedType" class="field">
+                    <option value="scan">Padrão</option>
+                    <option value="gif">GIF por URL</option>
+                  </select>
+                </div>
+                <div id="feedUrlBox">
+                  <label class="text-xs" style="color:var(--muted)">URL do GIF (https://)</label>
+                  <input id="feedUrl" class="field" placeholder="https://exemplo.com/imagem.gif">
+                </div>
+                <div class="flex justify-end gap-2">
+                  <button type="button" id="cancelEdit" class="btn-ghost">Cancelar</button>
+                  <button class="btn" type="submit">Aplicar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>`;
+      document.body.insertAdjacentHTML('beforeend', html);
+      $('#feedType').value = cam.feedType; 
+      $('#feedUrl').value = cam.feedUrl;
+      $('#feedUrlBox').style.display = cam.feedType === 'gif' ? 'block' : 'none';
+
+      $('#feedType').addEventListener('change', (e) => {
+        $('#feedUrlBox').style.display = e.target.value === 'gif' ? 'block' : 'none';
+      });
+
+      const close = ()=> $('#modalFeed')?.remove();
+      $('#closeFeed').addEventListener('click', close);
+      $('#cancelEdit').addEventListener('click', close);
+      $('#feedForm').addEventListener('submit',(e)=>{
+        e.preventDefault(); 
+        const cam = state.cams.find(c=>c.id===state.editingCamId); if(!cam) return;
+        cam.feedType = $('#feedType').value; 
+        cam.feedUrl = cam.feedType === 'gif' ? ($('#feedUrl').value||'').trim() : '';
+        close(); renderCameras(); showToast('Feed atualizado');
+      });
+    }
+
+    // --- Leaflet Map Integration ---
+    function initLeafletMap() {
+        if ($('#leafletMap') && !state.map.leafletMap) {
+            // Coordenadas do Porto do Itaqui, São Luís
+            const itaquiCoords = [-2.559, -44.365];
+            state.map.leafletMap = L.map('leafletMap').setView(itaquiCoords, 14);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(state.map.leafletMap);
+            
+            state.map.layers.alta = L.layerGroup().addTo(state.map.leafletMap);
+            state.map.layers.media = L.layerGroup().addTo(state.map.leafletMap);
+            state.map.layers.baixa = L.layerGroup().addTo(state.map.leafletMap);
+            state.map.heatmap = L.heatLayer([], { radius: 25 });
+
+            const overlayMaps = {
+                "<span style='color: var(--danger)'>Alta Gravidade</span>": state.map.layers.alta,
+                "<span style='color: var(--warn)'>Média Gravidade</span>": state.map.layers.media,
+                "<span style='color: var(--ok)'>Baixa Gravidade</span>": state.map.layers.baixa
+            };
+            L.control.layers(null, overlayMaps, { collapsed: false }).addTo(state.map.leafletMap);
+
+
+            // Adiciona pinos para ocorrências existentes
+            state.ocorrencias.forEach(o => addPointToMap(o));
+            
+            $('#clearMap')?.addEventListener('click', () => {
+              state.map.markers.forEach(m => m.marker.remove());
+              state.map.markers = [];
+              state.map.heatmap.setLatLngs([]);
+              // MELHORIA: Limpa também as ocorrências do estado para refletir no mapa
+              state.ocorrencias = [];
+              state.chamados = [];
+              saveState();
+              renderDashboard(); // Atualiza a UI
+              showToast('Mapa e ocorrências limpas.');
+            });
+
+            $('#toggleHeatmap')?.addEventListener('click', toggleHeatmap);
+        }
+    }
+
+    function addPointToMap(o) {
+        if (!state.map.leafletMap) return;
+        
+        // Simula coordenadas próximas ao porto, ou usa as existentes se já tiverem sido geradas
+        if (!o.coords) {
+            const lat = -2.559 + (Math.random() - 0.5) * 0.05;
+            const lon = -44.365 + (Math.random() - 0.5) * 0.05;
+            o.coords = [lat, lon];
+        }
+        
+        const color = o.gravidade === 'Alta' ? 'var(--danger)' : o.gravidade === 'Média' ? 'var(--warn)' : 'var(--ok)';
+
+        const marker = L.circleMarker(o.coords, {
+            radius: 8,
+            fillColor: color,
+            color: '#fff',
+            weight: 1.5,
+            opacity: 1,
+            fillOpacity: 0.85
+        });
+        
+        marker.bindPopup(`<b>Ocorrência #${o.id}</b><br>Tipo: ${o.tipo}<br>Local: ${o.local}<br>Gravidade: ${o.gravidade}`);
+        
+        marker.on('mouseover', () => handleMapHighlight(o.id, true));
+        marker.on('mouseout', () => handleMapHighlight(o.id, false));
+        marker.on('click', () => {
+            const el = $(`[data-occurrence-id="${o.id}"]`);
+            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+        if (o.gravidade === 'Alta') marker.addTo(state.map.layers.alta);
+        else if (o.gravidade === 'Média') marker.addTo(state.map.layers.media);
+        else marker.addTo(state.map.layers.baixa);
+        
+        state.map.markers.push({id: o.id, marker: marker});
+    }
+
+    function toggleHeatmap() {
+        if (state.map.heatmapVisible) {
+            state.map.leafletMap.removeLayer(state.map.heatmap);
+            state.map.heatmapVisible = false;
+            showToast("Heatmap desativado.");
+        } else {
+            const points = state.ocorrencias.filter(o => o.coords).map(o => [...o.coords, o.gravidade === 'Alta' ? 1 : 0.5]);
+            state.map.heatmap.setLatLngs(points);
+            state.map.leafletMap.addLayer(state.map.heatmap);
+            state.map.heatmapVisible = true;
+            showToast("Heatmap ativado.");
+        }
+    }
+
+
+    // --- Reports, Downloads & AI Summaries ---
+    function downloadReportAsPDF(filename, title, content) {
+        const { jsPDF } = window.jspdf;
+        if (!jsPDF) {
+            showToast("Erro ao carregar a biblioteca de PDF.");
+            console.error("jsPDF library not found.");
+            return;
+        }
+        const doc = new jsPDF();
+        
+        doc.setFontSize(18);
+        doc.text(title, 14, 22);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+
+        // Remove the formatted title from the content before adding to PDF
+        const cleanContent = content.substring(content.indexOf("--- DADOS ESTATÍSTICOS ---"));
+        const splitContent = doc.splitTextToSize(cleanContent, 180);
+        doc.text(splitContent, 14, 35);
+        
+        doc.save(filename);
+    }
+
+    function addDownload(name, recipients, meta){ state.downloads.unshift({name, recipients, ts:fmtTS(), meta}); renderDownloads(); saveState(); }
+    function renderDownloads(){
+      const box=$('#histDownloads'); box.innerHTML='';
+      if(!state.downloads.length) return;
+      state.downloads.slice(0,20).forEach(d=>{
+        const row=document.createElement('div'); row.className='border border-[var(--line)] rounded-md p-3 flex flex-col gap-1';
+        let title = d.name; if(d.meta?.type==='inc' && d.meta?.ids?.length){ title = `Incidente(s): ${d.meta.ids.join(', ')}`; } if(d.meta?.type==='perda' && d.meta?.cargas?.length){ title = `Perdas • ${d.meta.cargas.join(', ')}`; }
+        row.innerHTML = `<div class="flex items-center justify-between"><div class="text-sm font-medium">${title}</div><div class="text-xs" style="color:var(--muted)">${d.ts}</div></div><div class="text-[11px]" style="color:var(--muted)">Enviado para: ${d.recipients}</div>`;
+        box.appendChild(row);
+      });
+    }
+    function getIncDestinatarios(){ const d=[]; if($('#incDestOp')?.checked) d.push('Ger. Operacional'); if($('#incDestAmb')?.checked) d.push('Ger. Ambiental'); if($('#incDestGer')?.checked) d.push('Ger. Geral'); if($('#incDestSeg')?.checked) d.push('Segurança'); if($('#incDestLimp')?.checked) d.push('Limpeza'); return d.join(', '); }
+    
+    function buildIncPreview(forDownload = false){
+      const idf=$('#incIdBusca').value.trim(); const mm=$('#incPeriodo').value;
+      const arr=state.ocorrencias.filter(o=>(!idf || o.id===idf) && (!mm || o.data.slice(0,7)===mm)).slice(-300);
+      const box=$('#incPreviewBox');
+      
+      let content = `Relatório de Incidentes\n`;
+      content += `Filtros: ID=${idf || 'Todos'}, Período=${mm || 'Todos'}\n`;
+      content += `Destinatários: ${getIncDestinatarios()}\n\n`;
+
+      if(!arr.length){ 
+        box.classList.remove('hidden'); box.innerHTML='<div style="color:var(--muted)">Sem registos para a seleção.</div>'; 
+        return { arr: [], content: 'Sem registos para a seleção.' };
+      }
+      const head=`<div class="font-semibold mb-1">Prévia • Incidentes</div><div class="text-xs mb-2" style="color:var(--muted)">Destinatários: ${getIncDestinatarios()}</div>`;
+      const rows=arr.slice(0,12).map(o=> {
+          content += `ID: ${o.id} | Data: ${o.data} ${o.hora} | Local: ${o.local} | Tipo: ${o.tipo} ${o.subtipo||''} | Qtd: ${o.kg||'N/A'} kg\n`;
+          return `<div class="grid grid-cols-8 gap-2 text-xs"><div class="col-span-1">${o.id}</div><div class="col-span-2">${o.data} ${o.hora}</div><div class="col-span-2">${o.local}</div><div class="col-span-2 truncate">${o.tipo} ${o.subtipo||''}</div><div class="col-span-1 text-right">${o.kg||'N/A'}</div></div>`
+      }).join('');
+      box.classList.remove('hidden'); box.innerHTML=head+rows+(arr.length>12?`<div class="text-[11px] mt-1" style="color:var(--muted)">+${arr.length-12} linhas</div>`:'');
+      
+      return { arr, content };
+    }
+    $('#incPreviewBtn').addEventListener('click', () => buildIncPreview());
+    $('#incEnviarBtn').addEventListener('click', ()=>{ 
+        const { arr, content } = buildIncPreview(true);
+        if(!arr.length) { showToast('Nenhum dado para gerar relatório.'); return; }
+        downloadReportAsPDF(`relatorio_incidentes_${$('#incIdBusca').value || 'geral'}.pdf`, 'Relatório de Incidentes', content);
+        addDownload('incidentes.pdf', getIncDestinatarios(), {type:'inc', ids:arr.slice(0,8).map(x=>x.id)}); 
+        showToast('Relatório de Incidentes enviado & baixado'); 
+        addNotif('Relatório de Incidentes gerado'); 
+    });
+
+    $('#incGeminiBtn').addEventListener('click', async () => {
+        const { content } = buildIncPreview(true);
+        if (!content || content.startsWith('Sem registos')) {
+            showToast('Gere uma pré-visualização primeiro.');
+            return;
+        }
+        const geminiBox = $('#incGeminiBox');
+        geminiBox.classList.remove('hidden');
+        geminiBox.innerHTML = '<div class="flex justify-center items-center p-4"><div class="spinner"></div></div>';
+        const prompt = `Você é um gerente de operações sénior no Porto do Itaqui. Analise o seguinte relatório de incidentes e forneça um resumo executivo conciso num único parágrafo. Destaque os pontos mais críticos, como incidentes de alta gravidade, perdas financeiras significativas ou padrões preocupantes. O relatório é:\n\n${content}`;
+        const summary = await callGemini(prompt);
+        geminiBox.innerHTML = `<h4 class="font-semibold mb-2">✨ Resumo da IA</h4><p class="text-xs whitespace-pre-wrap">${summary}</p>`;
+    });
+    
+    function buildPerdPreview(forDownload = false) {
+        const ini = $('#dtIni').value; const fim = $('#dtFim').value; const carga = $('#filtroCargaPerda').value;
+        const filtered = state.ocorrencias.filter(o => {
+            const dateMatch = (!ini || o.data >= ini) && (!fim || o.data <= fim);
+            if (!dateMatch || o.categoria !== 'vazamento') return false;
+
+            if (carga === 'todas') return true;
+            if (TIPOS_FERTILIZANTES.includes(carga)) return o.tipo === 'Fertilizantes' && o.subtipo === carga;
+            return o.tipo === carga;
+        });
+
+        let content = `Relatório de Perdas\n`;
+        content += `Período: ${ini || 'N/A'} a ${fim || 'N/A'}\nCarga: ${carga}\n\n`;
+        filtered.forEach(o => {
+            content += `ID: ${o.id} | Data: ${o.data} | Tipo: ${o.tipo} ${o.subtipo||''} | Qtd: ${o.kg} kg | Custo: ${money(o.custo)}\n`;
+        });
+        const totalKg = filtered.reduce((sum, o) => sum + (o.kg || 0), 0);
+        const totalCusto = filtered.reduce((sum, o) => sum + (o.custo || 0), 0);
+        content += `\nTotal Perdas: ${totalKg.toFixed(2)} kg\nCusto Estimado Total: ${money(totalCusto)}`;
+
+        const box = $('#perdPreviewBox');
+        if (!filtered.length) {
+            box.classList.remove('hidden');
+            box.innerHTML = '<div style="color:var(--muted)">Sem registos para a seleção.</div>';
+            return { content: 'Sem registos para a seleção.' };
+        }
+        
+        box.classList.remove('hidden');
+        box.innerHTML = `<div class="font-semibold mb-1">Prévia • Perdas</div><pre class="text-xs whitespace-pre-wrap">${content}</pre>`;
+        return { content };
+    }
+    $('#perdPreviewBtn').addEventListener('click', buildPerdPreview);
+    $('#perdEnviarBtn').addEventListener('click', () => {
+        const { content } = buildPerdPreview(true);
+        if (content.startsWith('Sem registos')) { showToast('Nenhum dado para gerar relatório.'); return; }
+        downloadReportAsPDF(`relatorio_perdas.pdf`, 'Relatório de Perdas', content);
+        addDownload('perdas.pdf', 'Gerência', { type: 'perda', cargas: [$('#filtroCargaPerda').value] });
+        showToast('Relatório de Perdas enviado & baixado');
+    });
+
+    $('#perdGeminiBtn').addEventListener('click', async () => {
+        const { content } = buildPerdPreview(true);
+        if (!content || content.startsWith('Sem registos')) {
+            showToast('Gere uma pré-visualização primeiro.');
+            return;
+        }
+        const geminiBox = $('#perdGeminiBox');
+        geminiBox.classList.remove('hidden');
+        geminiBox.innerHTML = '<div class="flex justify-center items-center p-4"><div class="spinner"></div></div>';
+        const prompt = `Você é um analista financeiro do Porto do Itaqui. Analise o seguinte relatório de perdas de produtos e forneça um resumo executivo conciso. Foque-se no impacto financeiro, nos tipos de produto com maiores perdas e em quaisquer tendências que possa identificar. O relatório é:\n\n${content}`;
+        const summary = await callGemini(prompt);
+        geminiBox.innerHTML = `<h4 class="font-semibold mb-2">✨ Resumo da IA</h4><p class="text-xs whitespace-pre-wrap">${summary}</p>`;
+    });
+
+    // --- Suporte & Envios ---
+    $('#formTicket')?.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const assunto=$('#tAssunto').value.trim(), severidade=$('#tSeveridade').value, categoria=$('#tCategoria').value, destino=$('#tDestino').value, responsavel=$('#tResponsavel').value.trim(), tags=($('#tTags').value||'').split(',').map(s=>s.trim()).filter(Boolean), desc=$('#tDesc').value.trim();
+        const images = Array.from($('#tPreviews').querySelectorAll('img')).map(img=> img.src);
+        const t={ id:id6(), data:fmtTS(), assunto, severidade, categoria, destino, desc, status:'aberto', responsavel, tags, images, comments:[] };
+        tickets.unshift(t); renderTickets(); 
+        addEnvio('Ticket', `#${t.id} ${t.assunto}`, 'Enviado');
+        addNotif(`Ticket #${t.id} aberto: ${t.assunto}`); showToast('Ticket aberto'); e.target.reset(); $('#tPreviews').innerHTML='';
+        saveState();
+    });
+    function renderTickets(){
+      const q = ($('#tFiltro')?.value||'').toLowerCase(); const st = $('#tStatus')?.value||'todos';
+      const box=$('#listaTickets'); box.innerHTML='';
+      const list = tickets.filter(t=> (st==='todos'||t.status===st) && (!q || (t.assunto+t.id+(t.tags||[]).join(',')).toLowerCase().includes(q)));
+      if(!list.length){ 
+          renderEmptyState('#listaTickets',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+            'Nenhum Ticket Encontrado',
+            'Use o formulário para abrir um novo ticket de suporte.'
+          );
+          return; 
+      }
+      list.forEach(t=>{
+        const row=document.createElement('div'); row.className='border border-[var(--line)] rounded-md p-3 flex flex-col gap-2';
+        row.innerHTML=`<div class='flex items-center justify-between'>
+            <div class='font-medium'>#${t.id} • ${t.assunto}</div>
+            <div class='text-xs' style='color:var(--muted)'>${t.data}</div>
+          </div>
+          <div class='flex flex-wrap gap-2 text-xs'>
+            <span class='chip'>${t.categoria}</span><span class='chip'>${t.destino}</span><span class='chip'>${t.severidade}</span>${t.responsavel?`<span class='chip'>Resp: ${t.responsavel}</span>`:''}${t.tags.map(x=>`<span class='chip'>#${x}</span>`).join('')}
+          </div>
+          <div class='text-sm'>${t.desc}</div>
+          ${t.images?.length? `<div class="grid grid-cols-3 gap-2">${t.images.map(src=> `<img src="${src}" alt="anexo" class="w-full h-20 object-cover rounded" onerror="this.src=''; this.style.display='none';">`).join('')}</div>`:''}
+          <div class='flex items-center gap-2 mt-1'>
+            <button class='btn-ghost text-xs btn-details' data-id="${t.id}">Detalhes</button>
+            <button class='btn-ghost text-xs btn-send' data-id="${t.id}">Enviar</button>
+            ${t.status==='fechado'? `<button class='btn-ghost text-xs btn-reopen' data-id="${t.id}">Reabrir</button>` : `<button class='btn-ghost text-xs btn-close' data-id="${t.id}">Fechar</button>`}
+            <button class='btn-ghost text-xs btn-del' data-id="${t.id}">Excluir</button>
+          </div>`;
+        row.querySelector('.btn-details').addEventListener('click', (e)=> openDetailsModal(e.target.dataset.id, 'ticket'));
+        row.querySelector('.btn-send').addEventListener('click', (e)=>{ const ticket = tickets.find(ti => ti.id === e.target.dataset.id); if(ticket) { addEnvio('Ticket', `#${ticket.id} ${ticket.assunto}`, 'Enviado'); showToast('Ticket enviado'); } });
+        row.querySelector('.btn-close')?.addEventListener('click', (e)=>{ const ticket = tickets.find(ti => ti.id === e.target.dataset.id); if(ticket) { ticket.status='fechado'; renderTickets(); saveState(); } });
+        row.querySelector('.btn-reopen')?.addEventListener('click', (e)=>{ const ticket = tickets.find(ti => ti.id === e.target.dataset.id); if(ticket) { ticket.status='aberto'; renderTickets(); saveState(); } });
+        row.querySelector('.btn-del').addEventListener('click', (e)=>{ const index=tickets.findIndex(ti => ti.id === e.target.dataset.id); if(index>-1){ tickets.splice(index,1); renderTickets(); saveState(); } });
+        box.appendChild(row);
+      });
+    }
+    $('#btnClearTickets').addEventListener('click', () => { tickets.length = 0; renderTickets(); showToast("Tickets limpos"); saveState(); });
+    function addEnvio(type, name, status){ envios.unshift({type, name, status, ts: fmtTS()}); renderEnvios(); saveState(); }
+    function renderEnvios() {
+      const box = $('#histEnvios'); box.innerHTML = '';
+      if (!envios.length) { box.innerHTML = '<div class="text-xs" style="color:var(--muted)">Nenhum envio registado.</div>'; return; }
+      envios.slice(0, 10).forEach(envio => {
+        const row = document.createElement('div'); row.className = 'border border-[var(--line)] rounded-md p-2 flex items-center justify-between';
+        row.innerHTML = `<div class="text-sm"><strong>${envio.type}:</strong> ${envio.name}</div><div class="text-xs"><span class="chip">${envio.status}</span> ${envio.ts}</div>`;
+        box.appendChild(row);
+      });
+    }
+
+    // --- Search Palette ---
+    function showPalette(show) {
+        const p = $('#palette');
+        if (show) {
+            p.classList.add('show');
+            renderSearchHistory();
+            $('#q').focus();
+        } else {
+            p.classList.remove('show');
+            $('#q').value = '';
+            $('#qResults').innerHTML = '';
+        }
+    }
+    $('#openSearch').addEventListener('click', () => showPalette(true));
+    $('#palette').addEventListener('click', (e) => { if (e.target.id === 'palette') showPalette(false); });
+
+    function renderSearchHistory() {
+        const historyBox = $('#qHistory');
+        historyBox.innerHTML = '<span class="chip !border-transparent">Recentes:</span>';
+        if (!state.searchHistory.length) {
+            historyBox.innerHTML += '<span style="color:var(--muted)">Nenhuma busca recente.</span>';
+            return;
+        }
+        state.searchHistory.forEach(term => {
+            const chip = document.createElement('button');
+            chip.className = 'chip cursor-pointer hover:bg-[rgba(255,255,255,0.1)]';
+            chip.textContent = term;
+            chip.onclick = () => {
+                $('#q').value = term;
+                $('#q').dispatchEvent(new Event('input'));
+            };
+            historyBox.appendChild(chip);
+        });
+    }
+
+    $('#q').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        const resultsBox = $('#qResults');
+        resultsBox.innerHTML = '';
+        if (q.length < 2) return;
+
+        let results = [];
+        state.ocorrencias.forEach(o => { if (JSON.stringify(o).toLowerCase().includes(q)) { results.push({ type: 'Ocorrência', text: `#${o.id} - ${o.tipo} em ${o.local}`, action: () => {showTab('acomp'); openDetailsModal(o.id, 'occurrence');} }); } });
+        tickets.forEach(t => { if (JSON.stringify(t).toLowerCase().includes(q)) { results.push({ type: 'Ticket', text: `#${t.id} - ${t.assunto}`, action: () => {showTab('suporte'); openDetailsModal(t.id, 'ticket');} }); } });
+        state.cams.forEach(c => { if (JSON.stringify(c).toLowerCase().includes(q)) { results.push({ type: 'Câmera', text: `${c.label}`, action: () => showTab('cameras') }); } });
+
+        if (!results.length) { resultsBox.innerHTML = '<div class="p-4 text-sm text-center" style="color:var(--muted)">Nenhum resultado encontrado.</div>'; return; }
+
+        results.forEach(r => {
+            const row = document.createElement('div'); row.className = 'row';
+            row.innerHTML = `<span class="chip text-xs">${r.type}</span><span class="flex-grow">${r.text}</span>`;
+            row.addEventListener('click', () => { 
+                if (!state.searchHistory.includes(q)) {
+                    state.searchHistory.unshift(q);
+                    state.searchHistory = state.searchHistory.slice(0, 5); // Limita a 5 itens
+                    saveState();
+                }
+                r.action(); 
+                showPalette(false); 
+            });
+            resultsBox.appendChild(row);
+        });
+    });
+
+    // --- Context Menu & Modals ---
+    function closeOccurrenceMenu() {
+        const menu = $('.occurrence-menu');
+        if (menu) menu.remove();
+    }
+    function createActionPlanModal() {
+        if ($('#modalActionPlan')) $('#modalActionPlan').remove();
+        const modal = document.createElement('div');
+        modal.id = 'modalActionPlan';
+        modal.className = 'palette show';
+        modal.style.zIndex = '190';
+
+        modal.innerHTML = `
+            <div class="card" style="width:min(640px,95vw)">
+                <div class="p-3 border-b border-[var(--line)] flex items-center justify-between">
+                    <div class="font-semibold">Plano de Ação da IA</div>
+                    <button class="icon-btn" onclick="document.getElementById('modalActionPlan').remove()">✕</button>
+                </div>
+                <div id="aiActionPlanContent" class="p-4 max-h-[60vh] overflow-auto">
+                    <div class="flex flex-col justify-center items-center p-8 gap-4">
+                        <div class="spinner"></div>
+                        <p style="color:var(--muted)">A IA está a gerar um plano de ação...</p>
+                    </div>
+                </div>
+            </div>`;
+        
+        modal.addEventListener('click', (e) => { if (e.target.id === 'modalActionPlan') modal.remove(); });
+        return modal;
+    }
+    function openOccurrenceMenu(id, targetElement) {
+        closeOccurrenceMenu(); // Close any existing menu
+        const chamado = state.chamados.find(c => c.o.id === id);
+        if (!chamado) return;
+
+        const rect = targetElement.getBoundingClientRect();
+        const menu = document.createElement('div');
+        menu.className = 'occurrence-menu';
+        
+        // Posicionamento inteligente do menu
+        const spaceRight = window.innerWidth - rect.right;
+        const spaceBottom = window.innerHeight - rect.bottom;
+        
+        if (spaceRight < 200) { // Pouco espaço à direita
+            menu.style.left = `${rect.left + window.scrollX - 180}px`;
+        } else {
+            menu.style.left = `${rect.right + window.scrollX + 5}px`;
+        }
+        
+        if (spaceBottom < 250) { // Pouco espaço em baixo
+            menu.style.top = `${rect.top + window.scrollY - 200}px`;
+        } else {
+            menu.style.top = `${rect.top + window.scrollY}px`;
+        }
+
+
+        menu.innerHTML = `
+            <button data-action="resolve" ${chamado.status === 'Resolvido' ? 'disabled' : ''}>Resolver</button>
+            <button data-action="suggest">✨ Sugerir Ação</button>
+            <button data-action="details">Ver Detalhes</button>
+            <button data-action="report">Gerar Relatório</button>
+            <button data-action="copy">Copiar ID</button>
+        `;
+        
+        menu.querySelector('[data-action="resolve"]').addEventListener('click', () => {
+            chamado.status = 'Resolvido';
+            chamado.resolvedAt = new Date();
+            chamado.timeline.push({ ts: fmtTS(), text: `Resolvido por ${state.user?.nome || 'Operador'}` });
+            addNotif(`Ocorrência #${id} resolvida`);
+            renderChamados(); renderControle(); renderDashboard();
+            closeOccurrenceMenu();
+            saveState();
+        });
+        menu.querySelector('[data-action="suggest"]').addEventListener('click', async () => {
+            closeOccurrenceMenu();
+            const modal = createActionPlanModal();
+            document.body.appendChild(modal);
+            const incidentDetails = `- ID: ${chamado.o.id}\n- Categoria: ${chamado.o.categoria === 'vazamento' ? 'Vazamento de Produto' : 'Operação Suja'}\n- Local: ${chamado.o.local}\n- Gravidade: ${chamado.o.gravidade}\n- Data: ${chamado.o.data} ${chamado.o.hora}\n- Detalhes: ${chamado.o.tipo} ${chamado.o.subtipo ? `(${chamado.o.subtipo})` : ''}\n- Veículo/Navio: ${chamado.o.placa || chamado.o.navio}\n- Qtd: ${chamado.o.kg || 'N/A'} kg\n- Status: ${chamado.status}`;
+            const prompt = `Aja como um especialista em segurança e resposta a incidentes do Porto do Itaqui. Uma ocorrência foi registada. Forneça um plano de ação claro e numerado para o operador de controlo. O plano deve ser prático, priorizar a segurança e a contenção, e incluir etapas de comunicação. Detalhes da Ocorrência:\n${incidentDetails}\n\nO seu plano de ação deve ser apresentado em português.`;
+            const actionPlan = await callGemini(prompt);
+            const contentDiv = modal.querySelector('#aiActionPlanContent');
+            contentDiv.innerHTML = `<h4 class="font-semibold mb-2 text-base">✨ Plano de Ação Sugerido pela IA</h4><div class="text-sm whitespace-pre-wrap">${actionPlan.replace(/\n/g, '<br>')}</div>`;
+        });
+        menu.querySelector('[data-action="copy"]').addEventListener('click', () => { copyToClipboard(id); closeOccurrenceMenu(); });
+        menu.querySelector('[data-action="details"]').addEventListener('click', () => { openDetailsModal(id, 'occurrence'); closeOccurrenceMenu(); });
+        menu.querySelector('[data-action="report"]').addEventListener('click', () => {
+            showTab('relatorios');
+            $('#incIdBusca').value = id;
+            $('#incIdBusca').focus();
+            buildIncPreview();
+            showToast(`Filtrando relatório para ID #${id}`);
+            closeOccurrenceMenu();
+        });
+
+        document.body.appendChild(menu);
+    }
+    
+    // --- Mock Data & Init ---
+    function initMockData() {
+        const randomDate = (start, end) => new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+
+        for (let i = 0; i < 50; i++) { // Increased mock data for better reporting
+            const d = randomDate(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), new Date()); // Data from the last year
+            const data = d.toISOString().slice(0, 10);
+            const hora = d.toTimeString().slice(0, 5);
+            const categoria = sample(['vazamento', 'op_suja']);
+            const gravidade = sample(['Baixa', 'Média', 'Alta']);
+
+            const o = { id: id6(), data, hora, gravidade, categoria };
+
+            if (categoria === 'vazamento') {
+                o.local = sample(SETORES);
+                o.placa = `${sample(['A','B','C'])}${sample(['A','B','C'])}${sample(['A','B','C'])}-${rand(1,9)}${sample(['A','B','C'])}${rand(0,9)}${rand(0,9)}`;
+                o.tipo = sample(TIPOS_PRODUTO);
+                o.kg = rand(5, 150);
+                o.custo = Number((o.kg * (gravidade === 'Alta' ? 15.2 : gravidade === 'Média' ? 9.8 : 6.3)).toFixed(2));
+                if (o.tipo === 'Fertilizantes') o.subtipo = sample(TIPOS_FERTILIZANTES);
+            } else {
+                o.local = sample(BERCOS_OP_SUJA);
+                o.navio = sample(['MSC Preziosa', 'Costa Firenze', 'Lirica', 'Seaview']);
+                o.placa = o.navio;
+                o.tipo = "Operação Suja"; o.kg = 0; o.custo = 0;
+            }
+            state.ocorrencias.push(o);
+
+            const createdAt = d;
+            const slaMinutes = SLA_MIN[gravidade] || 30;
+            const status = Math.random() > 0.3 ? 'Resolvido' : (Math.random() > 0.5 ? 'Em Análise' : 'Aguardando');
+            const resolvedAt = status === 'Resolvido' ? new Date(createdAt.getTime() + rand(5, 120) * 60000) : null; // Increased resolution time variation
+            
+            const ch = { o, status, push: Math.random() > 0.5, setores: { Seguranca: true, Limpeza: true, Ambiental: Math.random() > 0.5 }, createdAt, resolvedAt, slaEnd: new Date(createdAt.getTime() + slaMinutes*60000), timeline: [{ ts: fmtTS(), text: `Criada por ${sample(OPERATORS)}` }], operator: sample(OPERATORS) };
+            state.chamados.push(ch);
+        }
+        // Sort by date, newest first
+        state.ocorrencias.sort((a,b) => new Date(b.data + ' ' + b.hora) - new Date(a.data + ' ' + a.hora));
+        state.chamados.sort((a,b) => b.createdAt - a.createdAt);
+        saveState();
+    }
+    
+    // --- FINAL INIT ---
+    function init(){
+      const hasLoadedState = loadState();
+      
+      applyTheme();
+
+      if (!hasLoadedState || state.ocorrencias.length === 0) {
+          initMockData();
+      }
+      
+      if(checkSavedUser()) { 
+        showTab('dashboard'); 
+      } else { 
+        showTab('login'); 
+      }
+      
+      renderDownloads(); renderNotifList(); updateBadge(); renderTickets(); renderEnvios(); initCams(); renderCameras();
+      
+      populateCargoFilters();
+      setPeriodo('mensal'); // Set default date range for loss report and calculate
+      
+      // Add other main event listeners
+      $('#selPeriodoPerda').addEventListener('change', e => setPeriodo(e.target.value));
+      $$('#formPerdas input, #formPerdas select').forEach(el => el.addEventListener('change', calcPerdas));
+      $('#btnExportTickets').addEventListener('click', exportTickets);
+
+      document.body.addEventListener('click', e => {
+        if (e.target.closest('[data-occurrence-id]')) {
+             if (e.target.closest('.chip') || e.target.closest('button')) return;
+             e.preventDefault();
+             const card = e.target.closest('[data-occurrence-id]');
+             const id = card.dataset.occurrenceId;
+             openOccurrenceMenu(id, card);
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        const p = $('#palette');
+        const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
+
+        if (e.key === '/' && !isInput && !p.classList.contains('show')) {
+            e.preventDefault(); showPalette(true);
+        } else if (e.key === 'Escape' && p.classList.contains('show')) {
+            showPalette(false);
+        } else if (e.key === 'g' && !isInput && state.user) {
+            e.preventDefault(); openOcModal();
+        }
+      });
+      
+      // --- UPDATED LISTENERS FOR GENERAL REPORT ---
+      $('#selPeriodoGeral').addEventListener('change', buildGeralPreview);
+      $('#geralPreviewBtn').addEventListener('click', buildGeralPreview);
+      
+      $('#geralEnviarBtn').addEventListener('click', () => {
+          const { content } = buildGeralPreview(true);
+          if (content.startsWith('Sem dados')) { showToast('Nenhum dado para gerar relatório.'); return; }
+          const periodo = $('#selPeriodoGeral').value;
+          const periodoText = $('#selPeriodoGeral').options[$('#selPeriodoGeral').selectedIndex].text;
+          downloadReportAsPDF(`relatorio_geral_${periodo}.pdf`, `Relatório Geral - ${periodoText}`, content);
+          addDownload(`Relatório Geral (${periodoText})`, 'Gerência', { type: 'geral' });
+          showToast('Relatório Geral enviado & baixado');
+      });
+
+      $('#geralGeminiBtn').addEventListener('click', async () => {
+          const { content } = buildGeralPreview(true);
+          if (!content || content.startsWith('Sem dados')) {
+              showToast('Gere uma pré-visualização com dados primeiro.');
+              return;
+          }
+          const geminiBox = $('#geralGeminiBox');
+          geminiBox.classList.remove('hidden');
+          geminiBox.innerHTML = '<div class="flex justify-center items-center p-4"><div class="spinner"></div></div>';
+          
+          const prompt = `Você é um analista de dados sênior especializado em operações portuárias no Porto do Itaqui. Analise os seguintes dados estatísticos do sistema de monitoramento AURA DATHUM para o período selecionado e gere um resumo executivo claro e objetivo.
+          
+Dados para análise:
+${content}
+
+Seu resumo deve ser dividido nas seguintes seções, usando markdown com títulos em negrito:
+1.  **Desempenho do Sistema:** Avalie a eficiência da resposta, focando no tempo médio de resolução e na taxa de resolução.
+2.  **Análise de Ocorrências:** Destaque os tipos e gravidades de ocorrências mais comuns. Existem padrões preocupantes?
+3.  **Comparações e Tendências:** (Se possível, com base nos dados) Compare o desempenho ou os tipos de incidentes. Há alguma tendência de aumento ou diminuição em alguma área?
+4.  **Recomendações de Melhoria:** Com base na análise, sugira 2 a 3 ações práticas e priorizadas que a equipe de operações pode tomar para melhorar a segurança e a eficiência.
+
+Seja objetivo e baseie suas conclusões estritamente nos dados fornecidos. O formato deve ser profissional e direto.`;
+
+          const summary = await callGemini(prompt);
+          // Formatação básica para melhor leitura
+          let formattedSummary = summary
+              .replace(/\*\*(.*?)\*\*/g, '<h4 class="font-semibold mt-2 mb-1">$1</h4>')
+              .replace(/(\d\.\s*Desempenho do Sistema:?)/g, '<h4 class="font-semibold mt-2 mb-1">📊 $1</h4>')
+              .replace(/(\d\.\s*Análise de Ocorrências:?)/g, '<h4 class="font-semibold mt-2 mb-1">🚨 $1</h4>')
+              .replace(/(\d\.\s*Comparações e Tendências:?)/g, '<h4 class="font-semibold mt-2 mb-1">📈 $1</h4>')
+              .replace(/(\d\.\s*Recomendações de Melhoria:?)/g, '<h4 class="font-semibold mt-2 mb-1">💡 $1</h4>');
+
+          geminiBox.innerHTML = `<h4 class="font-semibold mb-2">✨ Análise da IA</h4><div class="text-xs whitespace-pre-wrap">${formattedSummary}</div>`;
+      });
+
+    }
+
+    // --- NEW & UPDATED Functions ---
+    function populateCargoFilters() {
+        const allCargos = ['todas', ...TIPOS_PRODUTO.filter(p => p !== 'Fertilizantes'), ...TIPOS_FERTILIZANTES];
+        const selectPerdas = $('#filtroCargaPerda');
+        if(selectPerdas) selectPerdas.innerHTML = allCargos.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    function setPeriodo(periodo) {
+        const hoje = new Date();
+        let dtIni = new Date(hoje);
+        const dtFim = hoje;
+        hoje.setHours(23, 59, 59, 999); // Ensure today is included
+        dtIni.setHours(0, 0, 0, 0);
+
+        switch (periodo) {
+            case 'diario': break;
+            case 'semanal': dtIni.setDate(hoje.getDate() - hoje.getDay()); break;
+            case 'mensal': dtIni.setDate(1); break;
+            case 'trimestral':
+                const quarter = Math.floor(hoje.getMonth() / 3);
+                dtIni = new Date(hoje.getFullYear(), quarter * 3, 1);
+                break;
+        }
+        const formatDate = (date) => date.toISOString().slice(0, 10);
+        $('#dtIni').value = formatDate(dtIni);
+        $('#dtFim').value = formatDate(dtFim);
+        calcPerdas();
+    }
+    
+    function calcPerdas() {
+        const ini = $('#dtIni').value; const fim = $('#dtFim').value; const carga = $('#filtroCargaPerda').value;
+        const filtered = state.ocorrencias.filter(o => {
+            const dateMatch = (!ini || o.data >= ini) && (!fim || o.data <= fim);
+            if (!dateMatch || o.categoria !== 'vazamento') return false;
+            if (carga === 'todas') return true;
+            if (TIPOS_FERTILIZANTES.includes(carga)) return o.tipo === 'Fertilizantes' && o.subtipo === carga;
+            return o.tipo === carga;
+        });
+        const totalKg = filtered.reduce((sum, o) => sum + (o.kg || 0), 0);
+        const totalCusto = filtered.reduce((sum, o) => sum + (o.custo || 0), 0);
+        const totalHoras = filtered.reduce((sum, o) => sum + (o.gravidade === 'Alta' ? 2 : o.gravidade === 'Média' ? 1 : 0.5), 0);
+        $('#sumKg').textContent = totalKg.toFixed(2);
+        $('#sumRs').textContent = money(totalCusto);
+        $('#sumHoras').textContent = totalHoras.toFixed(1);
+    }
+
+    function openDetailsModal(itemId, itemType) {
+        if ($('#detailsModal')) $('#detailsModal').remove();
+        let item, title, contentHtml;
+
+        if (itemType === 'occurrence') {
+            item = state.chamados.find(c => c.o.id === itemId);
+            if (!item) return;
+            const o = item.o;
+            title = `Detalhes da Ocorrência #${o.id}`;
+            contentHtml = `
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div><strong>Local:</strong> ${o.local}</div>
+                    <div><strong>Data/Hora:</strong> ${o.data} ${o.hora}</div>
+                    <div><strong>Gravidade:</strong> ${o.gravidade}</div>
+                    <div><strong>Status:</strong> ${item.status}</div>
+                    <div><strong>Tipo:</strong> ${o.tipo} ${o.subtipo ? `(${o.subtipo})` : ''}</div>
+                    <div><strong>Veículo/Navio:</strong> ${o.placa || o.navio}</div>
+                    ${o.kg > 0 ? `<div><strong>Quantidade:</strong> ${o.kg} kg</div>` : ''}
+                    ${o.custo > 0 ? `<div><strong>Custo Estimado:</strong> ${money(o.custo)}</div>` : ''}
+                </div>
+                <h4 class="font-semibold mt-4 mb-2">Linha do Tempo</h4>
+                <div class="flex flex-col gap-2 text-xs border border-[var(--line)] rounded-md p-2 max-h-40 overflow-y-auto">
+                    ${item.timeline.map(t => `<p><span class="chip mr-2">${t.ts}</span> ${t.text}</p>`).join('')}
+                </div>`;
+        } else if (itemType === 'ticket') {
+            item = tickets.find(t => t.id === itemId);
+            if (!item) return;
+            title = `Detalhes do Ticket #${item.id}`;
+            contentHtml = `
+                <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                    <div><strong>Assunto:</strong> ${item.assunto}</div>
+                    <div><strong>Status:</strong> ${item.status}</div>
+                    <div><strong>Severidade:</strong> ${item.severidade}</div>
+                    <div><strong>Categoria:</strong> ${item.categoria}</div>
+                    <div><strong>Destino:</strong> ${item.destino}</div>
+                    <div><strong>Responsável:</strong> ${item.responsavel || 'N/A'}</div>
+                </div>
+                <div class="text-sm border-t border-[var(--line)] pt-3">
+                    <h4 class="font-semibold mb-1">Descrição</h4>
+                    <p class="text-xs">${item.desc}</p>
+                </div>
+                <div id="ticketComments" class="mt-3">
+                    <h4 class="font-semibold mb-2">Comentários</h4>
+                    <div id="commentsList" class="flex flex-col gap-2 max-h-32 overflow-y-auto mb-2 border border-[var(--line)] rounded-md p-2">
+                        ${item.comments.length ? item.comments.map(c => `<div class="text-xs"><span class="chip mr-2">${c.ts}</span> <strong>${c.author}:</strong> ${c.text}</div>`).join('') : '<p class="text-xs text-center p-2" style="color:var(--muted)">Sem comentários.</p>'}
+                    </div>
+                    <form id="commentForm" class="flex gap-2">
+                        <input id="commentInput" class="field text-xs" placeholder="Adicionar comentário..." required>
+                        <button class="btn text-xs" type="submit">Enviar</button>
+                    </form>
+                </div>`;
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'detailsModal';
+        modal.className = 'palette show';
+        modal.style.zIndex = '190';
+        modal.innerHTML = `
+            <div class="card" style="width:min(720px,95vw)">
+                <div class="p-3 border-b border-[var(--line)] flex items-center justify-between">
+                    <div class="font-semibold">${title}</div>
+                    <button class="icon-btn" onclick="document.getElementById('detailsModal').remove()">✕</button>
+                </div>
+                <div class="p-4">${contentHtml}</div>
+            </div>`;
+        
+        modal.addEventListener('click', (e) => { if (e.target.id === 'detailsModal') modal.remove(); });
+        document.body.appendChild(modal);
+
+        if (itemType === 'ticket') {
+            $('#commentForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const input = $('#commentInput');
+                const commentText = input.value.trim();
+                if (commentText) {
+                    item.comments.push({ text: commentText, author: state.user?.nome || 'Operador', ts: fmtTS() });
+                    input.value = '';
+                    // Re-render comments
+                    $('#commentsList').innerHTML = item.comments.length ? item.comments.map(c => `<div class="text-xs"><span class="chip mr-2">${c.ts}</span> <strong>${c.author}:</strong> ${c.text}</div>`).join('') : '<p class="text-xs text-center p-2" style="color:var(--muted)">Sem comentários.</p>';
+                    saveState();
+                }
+            });
+        }
+    }
+
+    function handleMapHighlight(occurrenceId, highlight = false) {
+      const el = $(`[data-occurrence-id="${occurrenceId}"]`);
+      if (el) el.classList.toggle('map-highlight', highlight);
+      
+      const markerData = state.map.markers.find(m => m.id === occurrenceId);
+      if (markerData?.marker) {
+        if(highlight) {
+          markerData.marker.setRadius(12);
+          markerData.marker.openPopup();
+        } else {
+          markerData.marker.setRadius(8);
+          markerData.marker.closePopup();
+        }
+      }
+    }
+
+    function buildGeralPreview(forDownload = false) {
+        const periodo = $('#selPeriodoGeral').value;
+        const endDate = new Date();
+        const startDate = new Date();
+
+        switch (periodo) {
+            case 'mensal':
+                startDate.setMonth(startDate.getMonth() - 1);
+                break;
+            case 'trimestral':
+                startDate.setMonth(startDate.getMonth() - 3);
+                break;
+            case 'semestral':
+                startDate.setMonth(startDate.getMonth() - 6);
+                break;
+            case 'anual':
+                startDate.setFullYear(startDate.getFullYear() - 1);
+                break;
+        }
+
+        const arr = state.chamados.filter(c => c.createdAt >= startDate && c.createdAt <= endDate);
+        const box = $('#geralPreviewBox');
+        
+        const periodoText = $('#selPeriodoGeral').options[$('#selPeriodoGeral').selectedIndex].text;
+        let content = `Relatório Geral - Período: ${periodoText}\n`;
+        content += `Data de Geração: ${new Date().toLocaleString('pt-BR')}\n\n`;
+
+        if (!arr.length) {
+            box.classList.remove('hidden');
+            box.innerHTML = '<div style="color:var(--muted)">Sem dados para o período selecionado.</div>';
+            return { content: 'Sem dados.' };
+        }
+
+        const total = arr.length;
+        const byGrav = { Alta: 0, Média: 0, Baixa: 0 };
+        const byCat = { vazamento: 0, op_suja: 0 };
+        const resolvedChamados = arr.filter(c => c.resolvedAt);
+        let totalResolutionTime = 0;
+        
+        arr.forEach(c => {
+            byGrav[c.o.gravidade]++;
+            byCat[c.o.categoria]++;
+        });
+
+        if (resolvedChamados.length > 0) {
+            totalResolutionTime = resolvedChamados.reduce((sum, c) => sum + (c.resolvedAt.getTime() - c.createdAt.getTime()), 0);
+        }
+        const avgResolutionMinutes = resolvedChamados.length > 0 ? (totalResolutionTime / resolvedChamados.length / 60000).toFixed(1) : 'N/A';
+        
+        content += `--- DADOS ESTATÍSTICOS ---\n`;
+        content += `Total de Ocorrências: ${total}\n`;
+        content += `Ocorrências Resolvidas: ${resolvedChamados.length} (${((resolvedChamados.length / total) * 100).toFixed(1)}%)\n`;
+        content += `Tempo Médio de Resolução: ${avgResolutionMinutes} minutos\n\n`;
+        
+        content += `Distribuição por Gravidade:\n`;
+        content += `- Alta: ${byGrav.Alta} (${((byGrav.Alta / total) * 100).toFixed(1)}%)\n`;
+        content += `- Média: ${byGrav.Média} (${((byGrav.Média / total) * 100).toFixed(1)}%)\n`;
+        content += `- Baixa: ${byGrav.Baixa} (${((byGrav.Baixa / total) * 100).toFixed(1)}%)\n\n`;
+
+        content += `Distribuição por Categoria:\n`;
+        content += `- Vazamento de Produto: ${byCat.vazamento} (${((byCat.vazamento / total) * 100).toFixed(1)}%)\n`;
+        content += `- Operação Suja: ${byCat.op_suja} (${((byCat.op_suja / total) * 100).toFixed(1)}%)\n\n`;
+
+        content += `Ações Tomadas (inferido):\n`;
+        content += `- Respostas a Incidentes: ${resolvedChamados.length} ocorrências foram tratadas e finalizadas pela equipe.\n`;
+        content += `- Notificações Push enviadas: ${arr.filter(c => c.push).length}\n`;
+
+        box.classList.remove('hidden');
+        box.innerHTML = `<h4 class="font-semibold mb-2">Prévia do Relatório</h4><pre class="text-xs whitespace-pre-wrap">${content}</pre>`;
+        return { content };
+    }
+    
+    function exportTickets() {
+      if(!tickets.length) { showToast('Nenhum ticket para exportar.'); return; }
+      const csv = ['id;data;assunto;severidade;categoria;status;responsavel'];
+      tickets.forEach(t => {
+          csv.push([t.id, t.data, t.assunto, t.severidade, t.categoria, t.status, t.responsavel || ''].join(';'));
+      });
+      const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "suporte_tickets.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Tickets exportados para CSV.');
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body> 
+</html>
